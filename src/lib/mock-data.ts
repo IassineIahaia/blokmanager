@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   BlockStock,
   DashboardMetrics,
   DeliveryZoneOption,
@@ -50,7 +50,7 @@ export const recentOrders: Order[] = [
 
 export const blockStocks: BlockStock[] = [
   {
-    type: "9",
+    type: "9cm",
     label: "Bloco de 9cm",
     description: "Divisória Interior",
     available: 1200,
@@ -58,7 +58,7 @@ export const blockStocks: BlockStock[] = [
     total: 1500,
   },
   {
-    type: "12",
+    type: "12cm",
     label: "Bloco de 12cm",
     description: "Standard Industrial",
     available: 650,
@@ -66,7 +66,7 @@ export const blockStocks: BlockStock[] = [
     total: 850,
   },
   {
-    type: "15",
+    type: "15cm",
     label: "Bloco de 15cm",
     description: "Estrutural Pesado",
     available: 400,
@@ -151,7 +151,7 @@ export const workers: Worker[] = [
 
 export const storefrontProducts: StorefrontProduct[] = [
   {
-    type: "9",
+    type: "9cm",
     name: "Bloco de Cimento 9cm",
     description:
       "Ideal para paredes interiores e divisórias leves. Alta precisão dimensional.",
@@ -160,7 +160,7 @@ export const storefrontProducts: StorefrontProduct[] = [
     available: true,
   },
   {
-    type: "12",
+    type: "12cm",
     name: "Bloco de Cimento 12cm",
     description:
       "Bloco standard para construção geral. Boa resistência e acabamento.",
@@ -169,7 +169,7 @@ export const storefrontProducts: StorefrontProduct[] = [
     available: true,
   },
   {
-    type: "15",
+    type: "15cm",
     name: "Bloco de Cimento 15cm",
     description:
       "Bloco estrutural para paredes exteriores. Excelente isolamento térmico.",

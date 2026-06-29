@@ -3,7 +3,7 @@ export type OrderStatus = "pendente" | "confirmado" | "entregue" | "cancelado";
 
 export type WorkerRole = "Moldador" | "Moldadora" | "Ajudante" | "Motorista";
 
-export type BlockType = '4"' | '5"' | '6"' | '9"' | "Pavê" | "Lajeta";
+export type BlockType = '9cm' | '12cm' | '15cm' | 'pave' | 'Pavê' | 'Lajeta';
 
 // ===== Orders =====
 export interface Order {
@@ -97,7 +97,7 @@ export interface StorefrontProduct {
 // ===== Checkout =====
 export type PaymentMethod = "mpesa" | "emola";
 
-export type DeliveryZone = "Maputo Cidade" | "Matola" | "KaMpfumo";
+export type DeliveryZone = "Nampula Cidade" | "Nacala" | "Ilha de Moçambique" | "Monapo" | "Angoche";
 
 export interface DeliveryZoneOption {
   zone: DeliveryZone;

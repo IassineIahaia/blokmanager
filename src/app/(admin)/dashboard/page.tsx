@@ -16,10 +16,42 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatNumber } from "@/lib/utils";
-import { dashboardMetrics, recentOrders, materialStocks } from "@/lib/mock-data";
+import { prisma } from "@/lib/prisma";
 
-export default function DashboardPage() {
-  const m = dashboardMetrics;
+async function getDashboardData() {
+  const [orders, blockStocks, materialStocks] = await Promise.all([
+    prisma.order.findMany({ orderBy: { date: "desc" }, take: 10 }),
+    prisma.blockStock.findMany(),
+    prisma.materialStock.findMany(),
+  ]);
+
+  const blocksInStock = blockStocks.reduce((sum, b) => sum + b.available, 0);
+  const pendingOrders = orders.filter((o) => o.status === "pendente").length;
+  const dailyCash = orders
+    .filter((o) => o.status === "confirmado" || o.status === "entregue")
+    .reduce((sum, o) => sum + o.valor, 0);
+  const blocksByType = blockStocks.map((b) => ({
+    type: b.label.replace("Bloco de ", ""),
+    quantity: b.available,
+  }));
+
+  return {
+    metrics: {
+      blocksInStock,
+      blocksByType,
+      pendingOrders,
+      dailyCash,
+      productionToday: 0,
+      productionGoal: 1000,
+      productionChangePct: 0,
+    },
+    recentOrders: orders.slice(0, 5),
+    materialStocks,
+  };
+}
+
+export default async function DashboardPage() {
+  const { metrics: m, recentOrders, materialStocks } = await getDashboardData();
 
   return (
     <div className="flex-1">
@@ -74,7 +106,7 @@ export default function DashboardPage() {
                 className="text-3xl font-semibold tracking-tight"
               />
             }
-            footer={<p>Apurado em 4 vendas confirmadas</p>}
+            footer={<p>Total de vendas confirmadas e entregues</p>}
           />
         </div>
 
@@ -121,7 +153,7 @@ export default function DashboardPage() {
                   {recentOrders.map((order) => (
                     <TableRow key={order.id} className="border-outline-variant">
                       <TableCell className="font-medium text-on-surface">
-                        #{order.id}
+                        #{order.id.slice(-6)}
                       </TableCell>
                       <TableCell className="text-on-surface-variant">
                         {order.cliente}
@@ -130,7 +162,7 @@ export default function DashboardPage() {
                         <CurrencyValue value={order.valor} />
                       </TableCell>
                       <TableCell>
-                        <StatusBadge status={order.status} />
+                        <StatusBadge status={order.status as import("@/types").OrderStatus} />
                       </TableCell>
                     </TableRow>
                   ))}
@@ -143,28 +175,37 @@ export default function DashboardPage() {
           <div className="rounded-md border border-outline-variant bg-surface-container-lowest p-6 space-y-4">
             <h2 className="text-title-md font-medium text-on-surface">Alertas de Stock</h2>
 
-            {materialStocks
-              .filter((mat) => mat.current < mat.minimum)
-              .map((mat) => (
-                <div
-                  key={mat.name}
-                  className="rounded-md border border-secondary-container bg-secondary-container/20 p-4 space-y-2"
-                >
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-on-surface">
-                        Stock Baixo: {mat.name}
-                      </p>
-                      <p className="text-body-sm text-on-surface-variant mt-1">
-                        Restam {mat.current} {mat.unit}. Mínimo recomendado: {mat.minimum}{" "}
-                        {mat.unit}.
-                      </p>
+            {materialStocks.filter((mat) => mat.current < mat.minimum).length === 0 ? (
+              <p className="text-body-sm text-on-surface-variant">
+                Todos os materiais estão dentro do nível mínimo.
+              </p>
+            ) : (
+              materialStocks
+                .filter((mat) => mat.current < mat.minimum)
+                .map((mat) => (
+                  <div
+                    key={mat.name}
+                    className="rounded-md border border-secondary-container bg-secondary-container/20 p-4 space-y-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-5 w-5 text-secondary shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-on-surface">
+                          Stock Baixo: {mat.name}
+                        </p>
+                        <p className="text-body-sm text-on-surface-variant mt-1">
+                          Restam {mat.current} {mat.unit}. Mínimo recomendado:{" "}
+                          {mat.minimum} {mat.unit}.
+                        </p>
+                      </div>
                     </div>
+                    <MaterialLevelBar
+                      current={mat.current}
+                      minimum={mat.minimum}
+                    />
                   </div>
-                  <MaterialLevelBar current={mat.current} minimum={mat.minimum} />
-                </div>
-              ))}
+                ))
+            )}
 
             <Button className="w-full h-11 bg-secondary text-on-secondary hover:bg-secondary/90 rounded-md">
               <ShoppingCart className="h-4 w-4 mr-2" />
