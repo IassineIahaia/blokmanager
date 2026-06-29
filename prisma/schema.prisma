@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Worker {
+  id        String   @id @default(cuid())
+  name      String
+  role      String
+  level     String?
+  salary    Float
+  debt      Float    @default(0)
+  createdAt DateTime @default(now())
+
+  attendance  AttendanceDay[]
+  loans       Loan[]
+  productions ProductionEntry[]
+}
+
+model AttendanceDay {
+  id       String  @id @default(cuid())
+  day      Int
+  present  Boolean
+  month    Int
+  year     Int
+  worker   Worker  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  workerId String
+}
+
+model Loan {
+  id          String   @id @default(cuid())
+  date        DateTime @default(now())
+  amount      Float
+  description String?
+  worker      Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  workerId    String
+}
+
+model BlockStock {
+  id          String @id @default(cuid())
+  type        String @unique
+  label       String
+  description String?
+  available   Int    @default(0)
+  reserved    Int    @default(0)
+  total       Int    @default(0)
+}
+
+model MaterialStock {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  unit        String
+  current     Float
+  minimum     Float
+  lastRestock DateTime?
+  supplier    String?
+}
+
+model ProductionEntry {
+  id         String   @id @default(cuid())
+  date       DateTime
+  blockType  String
+  quantity   Int
+  cementBags Float
+  sandM3     Float
+  damaged    Int      @default(0)
+  worker     Worker   @relation(fields: [workerId], references: [id])
+  workerId   String
+  createdAt  DateTime @default(now())
+}
+
+model Order {
+  id      String   @id @default(cuid())
+  cliente String
+  valor   Float
+  status  String   @default("pendente")
+  date    DateTime @default(now())
+}
