@@ -1,14 +1,15 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Users, Factory } from "lucide-react";
+import { LayoutGrid, Users, Factory, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutGrid },
   { href: "/trabalhadores", label: "Trabalhadores", icon: Users },
-  { href: "/producao", label: "Produção", icon: Factory },
+   { href: "/producao", label: "Produção", icon: Factory },
+    { href: "/encomendas", label: "Encomendas", icon: ShoppingBag },
 ];
 
 export function AdminSidebar() {
