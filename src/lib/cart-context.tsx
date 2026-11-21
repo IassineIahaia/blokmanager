@@ -1,76 +1,138 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import type { CartItem } from '@/types';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
-interface CartContextType {
-  cart: CartItem[];
-  addToCart: (item: CartItem) => void;
-  updateQty: (type: string, delta: number) => void;
-  clearCart: () => void;
-  totalItems: number;
-  totalPrice: number;
+/** Linha do carrinho. Os preços aqui são só para mostrar: o servidor recalcula tudo no checkout. */
+export interface CartItem {
+  productId: string;
+  label: string;
+  price: number;
+  minimumOrder: number;
+  orderStep: number;
+  quantity: number;
 }
 
-const CartContext = createContext<CartContextType | null>(null);
+const STORAGE_KEY = 'blok_cart_v2';
+const EMPTY: CartItem[] = [];
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [cart, setCart] = useState<CartItem[]>([]);
+// ── Store externo (localStorage + subscritores) ──
+let current: CartItem[] | null = null;
+const listeners = new Set<() => void>();
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem('blok_cart');
-      if (raw) setCart(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('blok_cart', JSON.stringify(cart));
-  }, [cart]);
-
-  function addToCart(item: CartItem) {
-    setCart(prev => {
-      const existing = prev.find(i => i.product.type === item.product.type);
-      if (existing) {
-        return prev.map(i =>
-          i.product.type === item.product.type
-            ? { ...i, quantity: i.quantity + item.quantity }
-            : i
-        );
-      }
-      return [...prev, item];
-    });
+function read(): CartItem[] {
+  if (current) return current;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    current = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    current = [];
   }
+  return current!;
+}
 
-  function updateQty(type: string, delta: number) {
-    setCart(prev =>
-      prev
-        .map(i =>
-          i.product.type === type
-            ? { ...i, quantity: Math.max(0, i.quantity + delta) }
-            : i
-        )
-        .filter(i => i.quantity > 0)
-    );
+function write(next: CartItem[]) {
+  current = next;
+  try {
+    if (next.length) localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    else localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // modo privado / armazenamento bloqueado: o carrinho fica só em memória
   }
+  listeners.forEach((l) => l());
+}
 
-  function clearCart() {
-    setCart([]);
-    localStorage.removeItem('blok_cart');
-  }
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) {
+      current = null;
+      listener();
+    }
+  };
+  window.addEventListener('storage', onStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener('storage', onStorage);
+  };
+}
 
-  const totalItems = cart.reduce((s, i) => s + i.quantity, 0);
-  const totalPrice = cart.reduce((s, i) => s + i.quantity * i.product.pricePerUnit, 0);
-
-  return (
-    <CartContext.Provider value={{ cart, addToCart, updateQty, clearCart, totalItems, totalPrice }}>
-      {children}
-    </CartContext.Provider>
-  );
+/** Arredonda para o mínimo e múltiplos do incremento a partir do mínimo. */
+export function clampQuantity(item: Pick<CartItem, 'minimumOrder' | 'orderStep'>, qty: number) {
+  if (qty <= 0) return 0;
+  return Math.max(item.minimumOrder, Math.round(qty));
 }
 
 export function useCart() {
-  const ctx = useContext(CartContext);
-  if (!ctx) throw new Error('useCart must be used within CartProvider');
-  return ctx;
+  const cart = useSyncExternalStore(subscribe, read, () => EMPTY);
+
+  const addToCart = useCallback((item: Omit<CartItem, 'quantity'>, quantity = item.minimumOrder) => {
+    const list = read();
+    const existing = list.find((i) => i.productId === item.productId);
+    write(
+      existing
+        ? list.map((i) => (i.productId === item.productId ? { ...i, ...item, quantity: i.quantity + quantity } : i))
+        : [...list, { ...item, quantity: clampQuantity(item, quantity) }],
+    );
+  }, []);
+
+  const setQuantity = useCallback((productId: string, quantity: number) => {
+    write(
+      read()
+        .map((i) => (i.productId === productId ? { ...i, quantity: clampQuantity(i, quantity) } : i))
+        .filter((i) => i.quantity > 0),
+    );
+  }, []);
+
+  /** Soma/subtrai um incremento; abaixo do mínimo remove o produto. */
+  const step = useCallback((productId: string, direction: 1 | -1) => {
+    const item = read().find((i) => i.productId === productId);
+    if (!item) return;
+    const next = item.quantity + direction * item.orderStep;
+    write(
+      read()
+        .map((i) => (i.productId === productId ? { ...i, quantity: next < i.minimumOrder ? 0 : next } : i))
+        .filter((i) => i.quantity > 0),
+    );
+  }, []);
+
+  const removeItem = useCallback((productId: string) => {
+    write(read().filter((i) => i.productId !== productId));
+  }, []);
+
+  /** Actualiza preços/nomes com os dados mais recentes do catálogo e remove produtos que já não existem. */
+  const syncWithCatalog = useCallback(
+    (products: { id: string; label: string; price: number; minimumOrder: number; orderStep: number }[]) => {
+      const list = read();
+      if (!list.length) return;
+      const byId = new Map(products.map((p) => [p.id, p]));
+      const next = list
+        .filter((i) => byId.has(i.productId))
+        .map((i) => {
+          const p = byId.get(i.productId)!;
+          return {
+            ...i,
+            label: p.label,
+            price: p.price,
+            minimumOrder: p.minimumOrder,
+            orderStep: p.orderStep,
+            quantity: Math.max(i.quantity, p.minimumOrder),
+          };
+        });
+      if (JSON.stringify(next) !== JSON.stringify(list)) write(next);
+    },
+    [],
+  );
+
+  const clearCart = useCallback(() => write([]), []);
+
+  const totals = useMemo(
+    () => ({
+      totalItems: cart.reduce((s, i) => s + i.quantity, 0),
+      totalPrice: cart.reduce((s, i) => s + i.quantity * i.price, 0),
+    }),
+    [cart],
+  );
+
+  return { cart, addToCart, setQuantity, step, removeItem, syncWithCatalog, clearCart, ...totals };
 }

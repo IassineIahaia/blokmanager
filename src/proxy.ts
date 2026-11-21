@@ -1,22 +1,33 @@
 import { auth } from '../auth'
 import { NextResponse } from 'next/server'
 
+/** Páginas de administração (as APIs verificam a sessão em cada handler). */
+const ADMIN_PREFIXES = ['/dashboard', '/encomendas', '/producao', '/produtos', '/trabalhadores', '/configuracoes']
+
 export default auth((req) => {
   const isLoggedIn = !!req.auth
-  const isAdminRoute = req.nextUrl.pathname.startsWith('/dashboard') ||
-    req.nextUrl.pathname.startsWith('/trabalhadores') ||
-    req.nextUrl.pathname.startsWith('/producao') ||
-    req.nextUrl.pathname.startsWith('/encomendas')
+  const { pathname } = req.nextUrl
+  const isAdminRoute = ADMIN_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 
   if (isAdminRoute && !isLoggedIn) {
-    return NextResponse.redirect(new URL('/login', req.nextUrl))
+    const url = new URL('/login', req.nextUrl)
+    url.searchParams.set('next', pathname)
+    return NextResponse.redirect(url)
   }
 
-  if (req.nextUrl.pathname === '/login' && isLoggedIn) {
+  if (pathname === '/login' && isLoggedIn) {
     return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
   }
 })
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/trabalhadores/:path*', '/producao/:path*', '/encomendas/:path*', '/login'],
+  matcher: [
+    '/dashboard/:path*',
+    '/encomendas/:path*',
+    '/producao/:path*',
+    '/produtos/:path*',
+    '/trabalhadores/:path*',
+    '/configuracoes/:path*',
+    '/login',
+  ],
 }
