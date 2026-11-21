@@ -7,6 +7,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ------------------------------- Enums -------------------------------
+
+/// Ciclo de vida de uma encomenda.
+enum OrderStatus {
+  pendente   // criada, aguarda confirmação/pagamento
+  confirmado // aceite pelo admin (pagamento confirmado ou pagamento na entrega)
+  em_entrega // a caminho do cliente
+  entregue
+  cancelado
+}
+
+/// Resumo do estado de pagamento da encomenda (derivado dos pagamentos).
+enum OrderPaymentStatus {
+  por_pagar
+  em_verificacao // cliente submeteu comprovativo, admin ainda não validou
+  pago
+}
+
+enum PaymentMethod {
+  mpesa
+  emola
+  transferencia
+  numerario
+}
+
+enum PaymentStatus {
+  pendente
+  confirmado
+  rejeitado
+}
+
+enum StockMovementType {
+  producao  // entrada de blocos produzidos
+  reserva   // blocos reservados por uma encomenda
+  liberacao // reserva libertada (encomenda cancelada)
+  entrega   // saída de blocos entregues
+  ajuste    // correcção manual
+}
+
+// ----------------------------- Pessoal ------------------------------
+
 model Worker {
   id        String   @id @default(cuid())
   name      String
@@ -19,6 +60,7 @@ model Worker {
   attendance  AttendanceDay[]
   loans       Loan[]
   productions ProductionEntry[]
+  deliveries  Order[]           @relation("OrderDriver")
 }
 
 model AttendanceDay {
@@ -40,14 +82,48 @@ model Loan {
   workerId    String
 }
 
-model BlockStock {
-  id          String @id @default(cuid())
-  type        String @unique
-  label       String
-  description String?
-  available   Int    @default(0)
-  reserved    Int    @default(0)
-  total       Int    @default(0)
+// -------------------------- Produtos e stock -------------------------
+
+/// Produto vendido na loja e respectivo stock (1 linha por tipo de bloco).
+/// A tabela mantém o nome histórico "BlockStock".
+model Product {
+  id           String  @id @default(cuid())
+  type         String  @unique // identificador curto: 9cm, 12cm, 15cm, pave
+  label        String // nome comercial
+  description  String? // subtítulo curto (ex.: "Divisória Interior")
+  details      String? // texto mais longo para a loja
+  price        Int     @default(0) // preço unitário em meticais
+  minimumOrder Int     @default(1)
+  orderStep    Int     @default(50) // incremento no carrinho
+  active       Boolean @default(true)
+  imageUrl     String?
+  sortOrder    Int     @default(0)
+
+  available Int @default(0) // pronto a vender
+  reserved  Int @default(0) // reservado por encomendas por entregar
+  total     Int @default(0) // available + reserved
+
+  orderItems OrderItem[]
+  movements  StockMovement[]
+
+  @@map("BlockStock")
+}
+
+model StockMovement {
+  id        String            @id @default(cuid())
+  type      StockMovementType
+  quantity  Int // unidades: positivo = entrada, negativo = saída (reserva sai do disponível; entrega sai do armazém)
+  note      String?
+  createdAt DateTime          @default(now())
+
+  product      Product          @relation(fields: [productId], references: [id], onDelete: Cascade)
+  productId    String
+  order        Order?           @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  orderId      String?
+  production   ProductionEntry? @relation(fields: [productionId], references: [id], onDelete: SetNull)
+  productionId String?
+
+  @@index([productId, createdAt])
 }
 
 model MaterialStock {
@@ -71,12 +147,114 @@ model ProductionEntry {
   worker     Worker   @relation(fields: [workerId], references: [id])
   workerId   String
   createdAt  DateTime @default(now())
+
+  movements StockMovement[]
+}
+
+// ----------------------------- Vendas -------------------------------
+
+model DeliveryZone {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  fee       Int // meticais
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  name      String
+  phone     String   @unique // formato normalizado: 258XXXXXXXXX
+  email     String?
+  createdAt DateTime @default(now())
+
+  orders Order[]
 }
 
 model Order {
-  id      String   @id @default(cuid())
-  cliente String
-  valor   Float
-  status  String   @default("pendente")
-  date    DateTime @default(now())
+  id          String @id @default(cuid())
+  number      Int    @unique @default(autoincrement()) // mostrado como BM-0001
+  accessToken String @unique @default(cuid()) // link privado do cliente
+
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  customerId    String?
+  customerName  String
+  customerPhone String?
+
+  zoneName    String?
+  deliveryFee Int     @default(0)
+  address     String?
+  reference   String?
+  notes       String?
+
+  subtotal Int @default(0)
+  total    Int
+
+  status        OrderStatus        @default(pendente)
+  paymentStatus OrderPaymentStatus @default(por_pagar)
+  paymentMethod PaymentMethod?
+
+  driver       Worker?   @relation("OrderDriver", fields: [driverId], references: [id], onDelete: SetNull)
+  driverId     String?
+  deliveryDate DateTime?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  confirmedAt DateTime?
+  deliveredAt DateTime?
+  cancelledAt DateTime?
+
+  items     OrderItem[]
+  payments  Payment[]
+  events    OrderEvent[]
+  movements StockMovement[]
+
+  @@index([status, createdAt])
+}
+
+model OrderItem {
+  id          String @id @default(cuid())
+  productName String // cópia do nome no momento da compra
+  unitPrice   Int
+  quantity    Int
+  lineTotal   Int
+
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId   String
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+}
+
+model Payment {
+  id         String        @id @default(cuid())
+  method     PaymentMethod
+  amount     Int
+  reference  String? // ID da transacção M-Pesa / e-Mola
+  payerPhone String?
+  status     PaymentStatus @default(pendente)
+  note       String?
+  createdAt  DateTime      @default(now())
+  reviewedAt DateTime?
+
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+}
+
+/// Histórico (linha do tempo) de cada encomenda.
+model OrderEvent {
+  id        String   @id @default(cuid())
+  message   String
+  actor     String // "cliente", "admin" ou "sistema"
+  createdAt DateTime @default(now())
+
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderId String
+}
+
+// --------------------------- Configuração ---------------------------
+
+/// Pares chave/valor editáveis (números de pagamento, WhatsApp, etc.).
+model Setting {
+  key   String @id
+  value String
 }
