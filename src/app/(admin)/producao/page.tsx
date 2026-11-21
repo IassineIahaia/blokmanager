@@ -1,12 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Package, Wrench, History, AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Package, Wrench, History, AlertTriangle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { AdminHeader } from '@/components/shared/admin-header';
 import { Button } from '@/components/ui/button';
 import { StockProgressBar, MaterialLevelBar } from '@/components/shared/stock-progress-bar';
 import { apiFetch, errorMessage } from '@/lib/fetcher';
 import { BLOCK_TYPES } from '@/lib/validation';
+import { Modal } from '@/components/ui/modal';
+import { Alert, Field, TextInput } from '@/components/ui/field';
+import { formatDate, formatNumber } from '@/lib/format';
 
 interface BlockStock {
   id: string;
@@ -26,6 +29,17 @@ interface MaterialStock {
   minimum: number;
   lastRestock?: string;
   supplier?: string;
+}
+
+interface ProductionRow {
+  id: string;
+  date: string;
+  blockType: string;
+  quantity: number;
+  damaged: number;
+  cementBags: number;
+  sandM3: number;
+  worker: { name: string };
 }
 
 interface Worker {
@@ -58,6 +72,8 @@ export default function ProducaoPage() {
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [restocking, setRestocking] = useState<MaterialStock | null>(null);
+  const [history, setHistory] = useState<ProductionRow[] | null>(null);
 
   const loadData = useCallback(() => {
     Promise.all([
@@ -74,6 +90,7 @@ export default function ProducaoPage() {
       })
       .catch(err => setError(errorMessage(err)))
       .finally(() => setLoading(false));
+    apiFetch<ProductionRow[]>('/api/production').then(setHistory).catch(() => setHistory([]));
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -118,7 +135,7 @@ export default function ProducaoPage() {
 
   return (
     <div className="flex-1">
-      <AdminHeader title="Produção e Stock" userName="João Silva" userRole="Admin Master" />
+      <AdminHeader title="Produção e stock" subtitle="Registo diário de produção e materiais" />
 
       <div className="p-4 md:p-8 space-y-6">
 
@@ -319,7 +336,7 @@ export default function ProducaoPage() {
             </div>
 
             {/* Stock de Materiais */}
-            <div className="rounded-md border border-outline-variant bg-surface-container-lowest p-6 flex flex-col gap-4">
+            <div id="materiais" className="scroll-mt-4 rounded-md border border-outline-variant bg-surface-container-lowest p-6 flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <Wrench className="h-5 w-5 text-primary" />
                 <h2 className="text-title-md font-medium text-on-surface">Stock de Materiais</h2>
@@ -345,9 +362,9 @@ export default function ProducaoPage() {
                   </div>
 
                   {mat.current < mat.minimum && (
-                    <div className="bg-secondary-container/20 border border-secondary-container/50 rounded-sm px-3 py-2 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 text-secondary flex-shrink-0" />
-                      <span className="text-label-caps font-semibold uppercase tracking-widest text-secondary">
+                    <div className="bg-secondary-container/30 border border-secondary-container rounded-sm px-3 py-2 flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-on-secondary-container flex-shrink-0" />
+                      <span className="text-label-caps font-semibold uppercase tracking-widest text-on-secondary-container">
                         Reabastecimento necessário
                       </span>
                     </div>
@@ -369,20 +386,120 @@ export default function ProducaoPage() {
                       )}
                     </div>
                   )}
+
+                  <Button variant="outline" size="sm" onClick={() => setRestocking(mat)} className="self-start">
+                    <Plus className="h-4 w-4 mr-1" /> Registar entrada
+                  </Button>
                 </div>
               ))}
 
-              <Button
-                variant="outline"
-                className="mt-auto h-11 border-outline-variant text-on-surface-variant hover:bg-surface-container rounded-md"
-              >
-                <History className="h-4 w-4 mr-2" />
-                Ver Histórico de Entradas
-              </Button>
+              <p className="text-[12px] text-on-surface-variant">
+                O cimento e a areia indicados em cada registo de produção são descontados automaticamente.
+              </p>
             </div>
           </div>
         )}
+
+        {/* Histórico de produção */}
+        <section className="rounded-md border border-outline-variant bg-surface-container-lowest">
+          <div className="flex items-center gap-2 border-b border-outline-variant px-6 py-4">
+            <History className="h-5 w-5 text-primary" />
+            <h2 className="text-title-md font-medium text-on-surface">Últimos registos de produção</h2>
+          </div>
+          {!history ? (
+            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+          ) : history.length === 0 ? (
+            <p className="px-6 py-6 text-body-sm text-on-surface-variant">Ainda não há registos de produção.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-body-sm">
+                <thead className="bg-surface-container-low text-left text-label-caps uppercase text-on-surface-variant">
+                  <tr>
+                    <th className="px-6 py-2">Data</th>
+                    <th className="px-6 py-2">Responsável</th>
+                    <th className="px-6 py-2">Bloco</th>
+                    <th className="px-6 py-2 text-right">Produzidos</th>
+                    <th className="px-6 py-2 text-right">Danificados</th>
+                    <th className="px-6 py-2 text-right">Cimento</th>
+                    <th className="px-6 py-2 text-right">Areia</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant">
+                  {history.map(h => (
+                    <tr key={h.id}>
+                      <td className="px-6 py-2.5 whitespace-nowrap">{formatDate(h.date)}</td>
+                      <td className="px-6 py-2.5">{h.worker.name}</td>
+                      <td className="px-6 py-2.5">{BLOCK_LABELS[h.blockType] ?? h.blockType}</td>
+                      <td className="px-6 py-2.5 text-right tabular-nums">{formatNumber(h.quantity)}</td>
+                      <td className="px-6 py-2.5 text-right tabular-nums">{h.damaged ? formatNumber(h.damaged) : '—'}</td>
+                      <td className="px-6 py-2.5 text-right tabular-nums">{h.cementBags || '—'}</td>
+                      <td className="px-6 py-2.5 text-right tabular-nums">{h.sandM3 ? `${h.sandM3} m³` : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
       </div>
+
+      {restocking && (
+        <RestockModal
+          material={restocking}
+          onClose={() => setRestocking(null)}
+          onSaved={() => { setRestocking(null); loadData(); }}
+        />
+      )}
     </div>
+  );
+}
+
+function RestockModal({ material, onClose, onSaved }: { material: MaterialStock; onClose: () => void; onSaved: () => void }) {
+  const [quantity, setQuantity] = useState('');
+  const [supplier, setSupplier] = useState(material.supplier ?? '');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/materials/${material.id}/restock`, {
+        method: 'POST',
+        body: { quantity: Number(quantity), supplier: supplier || null },
+      });
+      onSaved();
+    } catch (err) {
+      setError(errorMessage(err));
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal
+      open
+      onClose={onClose}
+      size="sm"
+      title={`Entrada de ${material.name}`}
+      description={`Stock actual: ${material.current} ${material.unit}`}
+      footer={
+        <>
+          <Button variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button onClick={save} disabled={saving || !(Number(quantity) > 0)} className="bg-primary text-on-primary hover:bg-primary/90">
+            {saving && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />} Registar
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        {error && <Alert>{error}</Alert>}
+        <Field label={`Quantidade recebida (${material.unit})`} htmlFor="rs-q" required>
+          <TextInput id="rs-q" type="number" min={0} step="0.5" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        </Field>
+        <Field label="Fornecedor" htmlFor="rs-s">
+          <TextInput id="rs-s" value={supplier} onChange={(e) => setSupplier(e.target.value)} />
+        </Field>
+      </div>
+    </Modal>
   );
 }

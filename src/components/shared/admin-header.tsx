@@ -1,48 +1,44 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, Calendar } from "lucide-react";
+"use client";
+
+import Link from "next/link";
+import { LogOut, Settings } from "lucide-react";
+import { logout, useAdminUser } from "./admin-nav";
 
 interface AdminHeaderProps {
   title: string;
-  userName: string;
-  userRole?: string;
-  date?: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+  back?: { href: string; label: string };
 }
 
-export function AdminHeader({ title, userName, userRole, date }: AdminHeaderProps) {
-  const initials = userName
-    .split(" ")
-    .map((n) => n[0])
-    .slice(0, 2)
-    .join("");
+export function AdminHeader({ title, subtitle, actions, back }: AdminHeaderProps) {
+  const user = useAdminUser();
 
   return (
-    <header className="flex items-center justify-between border-b border-outline-variant bg-surface-container-lowest px-4 md:px-8 py-4">
-      <h1 className="text-headline-mobile md:text-headline-lg font-semibold text-on-surface">
-        {title}
-      </h1>
-      <div className="flex items-center gap-4">
-        {date && (
-          <div className="hidden md:flex items-center gap-2 text-body-sm text-on-surface-variant">
-            <Calendar className="h-4 w-4" />
-            {date}
-          </div>
-        )}
-        <Bell className="hidden md:block h-5 w-5 text-on-surface-variant" />
+    <header className="border-b border-outline-variant bg-surface-container-lowest px-4 py-4 md:px-8 print:hidden">
+      {back && (
+        <Link href={back.href} className="mb-1 inline-block text-body-sm text-on-surface-variant hover:text-primary">
+          ← {back.label}
+        </Link>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="truncate text-headline-mobile font-semibold text-on-surface md:text-headline-lg">{title}</h1>
+          {subtitle && <p className="text-body-sm text-on-surface-variant">{subtitle}</p>}
+        </div>
         <div className="flex items-center gap-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="" />
-            <AvatarFallback className="bg-primary-container text-on-primary-container text-label-caps">
-              {initials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="hidden md:block">
-            <p className="text-body-sm font-medium text-on-surface leading-none">{userName}</p>
-            {userRole && (
-              <p className="text-label-caps text-on-surface-variant tracking-wide mt-0.5">
-                {userRole}
-              </p>
-            )}
-          </div>
+          {actions}
+          {/* Em mobile não há sidebar: atalhos para configurações e sair */}
+          {user && (
+            <div className="flex items-center gap-1 md:hidden">
+              <Link href="/configuracoes" className="rounded-md p-2 text-on-surface-variant" aria-label="Configurações">
+                <Settings className="h-5 w-5" />
+              </Link>
+              <button onClick={logout} className="rounded-md p-2 text-on-surface-variant" aria-label="Terminar sessão">
+                <LogOut className="h-5 w-5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

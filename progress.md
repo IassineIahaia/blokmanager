@@ -6,147 +6,125 @@
 
 ---
 
-## 0. Diagnóstico (estado actual, lido em 21/11/2026)
+## ⚠️ Pendente antes de publicar (precisa de ti)
 
-**Stack:** Next.js 16.2.9 (App Router, `proxy.ts` em vez de `middleware.ts`), React 19, Prisma 5 + PostgreSQL (Neon), NextAuth v5 beta (Credentials, 1 admin via env), Tailwind 4 + shadcn.
+O código novo **e** a base de dados têm de ser actualizados juntos (o código novo não funciona com o schema antigo e vice-versa). Nada foi aplicado ao Neon nem à Vercel.
 
-**O que já funciona**
-- Login admin + protecção das páginas `/dashboard`, `/trabalhadores`, `/producao`, `/encomendas`
-- Dashboard lê da BD (encomendas, stock de blocos, materiais)
-- Produção: registo grava na BD e incrementa o stock de blocos
-- Encomendas (admin): criar manualmente, mudar estado, eliminar
-- Trabalhadores: listagem com presenças e empréstimos (só leitura)
-- Loja: catálogo, carrinho (localStorage), checkout em 2 passos que abre o WhatsApp
+1. No painel do Neon, criar um **branch/backup** da base de produção (segurança).
+2. Aplicar a migração ao Neon (preserva as encomendas existentes):
+   ```bash
+   npx prisma migrate deploy        # com o DATABASE_URL de produção no .env
+   ```
+3. Juntar o branch `fase-1-base-tecnica` ao `main` e fazer push (a Vercel publica sozinha).
+4. Entrar em `/configuracoes` e confirmar os números M-Pesa / e-Mola / WhatsApp (vieram do checkout antigo).
+5. Fazer uma encomenda de teste real na loja e segui-la no admin.
 
-**Problemas encontrados (o sistema está desligado em vários pontos)**
-1. **O checkout não grava nada na BD** — só abre o WhatsApp. O admin nunca vê o pedido em `/encomendas`. O ID `BM-xxxx` é aleatório e pode repetir.
-2. **O catálogo da loja vem de `mock-data.ts`**, não da BD. Preços e disponibilidade não ligam ao stock real. O tipo `"Pavê"` na loja ≠ `"pave"` na BD.
-3. **O modelo `Order` é pobre**: só `cliente`, `valor`, `status`. Faltam itens, telefone, endereço, zona, taxa de entrega, método/estado de pagamento, referência da transacção.
-4. **Stock não reage às encomendas**: `reserved` nunca muda; entrega não abate stock.
-5. **Produção não abate materiais** (cimento/areia) apesar de registar o consumo.
-6. **APIs sem protecção**: o `proxy.ts` não cobre `/api/*` — qualquer pessoa pode `DELETE /api/orders/:id` ou `POST /api/workers`.
-7. **Admin em mobile sem navegação**: `AdminBottomNav` existe mas não é usado no layout.
-8. **Nome do utilizador fixo no header** ("João Silva" / "Issufo Pereira"); não há botão de logout.
-9. **Botões sem acção**: "Ver todas", "Solicitar Suprimentos", "Ver Histórico de Entradas", "Novo Registo", "Registar Empréstimo", "Área do Cliente", "WhatsApp Suporte", links de Termos/Privacidade.
-10. **Dashboard com dados falsos/errados**: "Produção Hoje" fixo a 0, "Caixa do Dia" soma tudo (não só hoje), percentagem fixa.
-11. **Inconsistências de localização**: mapa do checkout aponta para Maputo, negócio é em Nampula; metadata diz "Maputo".
-12. **Carrinho inconsistente**: no cartão do produto o passo é o `minimumOrder`, no carrinho flutuante é 50; mínimo de encomenda não é validado.
-13. **Limpeza técnica**: dependências não usadas (`@libsql/client`, `@prisma/adapter-libsql`), `prisma/prisma/dev.db` esquecido, `prisma.config.ts` vazio, seed não idempotente, dinheiro em `Float`, estados como `String` livre, `mock-data.ts` ainda importado, sem validação de input, `fetch` sem tratamento de erro.
-14. Alteração por commitar: `src/middleware.ts` → `src/proxy.ts` + `src/app/api/auth/`.
+> Os passos 2 e 3 devem ser feitos seguidos (minutos de diferença), porque entre um e outro o site fica com código e base desalinhados.
 
 ---
 
-## Fase 1 — Base técnica e segurança ✅ (21/11/2026, branch `fase-1-base-tecnica`)
-- [x] Commitar a migração `middleware.ts` → `proxy.ts` (já feita localmente)
-- [x] Proteger as APIs de admin — `requireAdmin()` em todos os route handlers (testado: 401 sem sessão)
-- [x] Remover a rota `/api/dashboard` (não era usada e expunha dados)
-- [x] Remover dependências não usadas (`@libsql/client`, `@prisma/adapter-libsql`), `prisma/prisma/dev.db`, `prisma.config.ts` vazio e cliente antigo em `src/generated/`
-- [x] Adicionar validação de input com `zod` em todas as APIs (`src/lib/validation.ts`)
-- [x] Criar helper de respostas/erros para as APIs, mensagens em PT (`src/lib/api.ts`) e `apiFetch` no cliente (`src/lib/fetcher.ts`)
-- [x] Ecrãs de admin (encomendas, produção, trabalhadores) mostram erros em vez de rebentar
-- [x] Produção: valida que o tipo de bloco existe e que danificados ≤ produzidos; `total` passa a contar só blocos bons (antes somava os danificados)
-- [x] Token de cor `error` adicionado ao tema (`text-error` não tinha efeito)
-- [x] Tornar o seed idempotente (`upsert` / verificação antes de criar)
-- [x] Actualizar `README.md`
-- [ ] → Fase 2: mover produtos e zonas da loja para o seed (depende dos novos modelos)
+## 0. Diagnóstico inicial (21/11/2026)
 
-> Pendentes de lint já existentes, tratados nas fases seguintes: `setState` em effect no `cart-context.tsx` (Fase 3), `AdminBottomNav` não usado (Fase 8), import `StatusBadge` não usado em encomendas.
+**Stack:** Next.js 16.2.9 (App Router, `proxy.ts`), React 19, Prisma 5 + PostgreSQL (Neon), NextAuth v5 beta, Tailwind 4 + shadcn, zod.
 
-## Fase 2 — Modelo de dados (Prisma)
-- [ ] `Product` (ou estender `BlockStock`): nome público, descrição, preço unitário, encomenda mínima, imagem, activo/inactivo
-- [ ] `DeliveryZone`: nome, taxa, activo
-- [ ] `Customer`: nome, telefone (único), email opcional
-- [ ] `Order` reformulado: código legível sequencial (`BM-0001`), cliente, zona, endereço, referência, instruções, subtotal, taxa de entrega, total, estado, datas (criado/confirmado/entregue)
-- [ ] `OrderItem`: produto, quantidade, preço no momento da compra
-- [ ] `Payment`: método (M-Pesa / e-Mola / transferência / numerário), valor, referência da transacção, comprovativo, estado (pendente / confirmado / rejeitado), confirmado por / quando
-- [ ] `StockMovement`: histórico de entradas/saídas (produção, reserva, entrega, cancelamento, ajuste, compra de material)
-- [ ] Usar `enum` do Prisma para estados; dinheiro em `Int` (meticais) ou `Decimal`
-- [ ] Criar migração e correr seed actualizado
+Problemas encontrados e estado:
+1. ✅ Checkout não gravava nada na BD — agora cria a encomenda, reserva stock e gera código `BM-0001`.
+2. ✅ Catálogo vinha de `mock-data.ts` — agora vem da BD (preços, mínimos, stock real).
+3. ✅ Modelo `Order` pobre — agora tem itens, cliente, entrega, pagamentos, histórico.
+4. ✅ Stock não reagia às encomendas — reserva, libertação e saída automáticas.
+5. ✅ Produção não abatia materiais — agora desconta cimento e areia.
+6. ✅ APIs sem protecção — `requireAdmin()` em todas as APIs de admin.
+7. ✅ Admin sem navegação em mobile — menu inferior.
+8. ✅ Nome fixo no header / sem logout — utilizador da sessão + terminar sessão.
+9. ✅ Botões sem acção — todos ligados.
+10. ✅ Dashboard com dados falsos — métricas reais e gráficos de 7 dias.
+11. ✅ Maputo vs Nampula — corrigido.
+12. ✅ Carrinho inconsistente — mínimo e incremento por produto, validação de stock.
+13. ✅ Limpeza técnica — dependências, ficheiros mortos, tipos, validação, erros.
+14. ✅ `middleware.ts` → `proxy.ts` commitado.
+15. ✅ (descoberto) Tokens de cor/texto em falta no tema (`text-on-primary`, `text-on-surface`, `text-error`…): botões verdes não tinham texto branco.
 
-## Fase 3 — Loja ligada à BD
-- [ ] API pública `GET /api/products` (preço, mínimo, disponível = stock disponível > 0)
-- [ ] Catálogo da página inicial lê da BD (Server Component + carrinho no cliente)
-- [ ] Unificar identificação do produto (usar `id`/`type` da BD; acabar com "Pavê" vs "pave")
-- [ ] Carrinho: passo e mínimo coerentes, validação de mínimo, aviso se quantidade > stock disponível
-- [ ] API pública `GET /api/delivery-zones`
-- [ ] Remover `src/lib/mock-data.ts` quando nada o usar
+---
 
-## Fase 4 — Fluxo de pedido (checkout)
-- [ ] Passo 1: revisão do carrinho dentro do checkout (editar quantidades)
-- [ ] Passo 2: dados do cliente (nome, telefone) + entrega (zona, endereço, referência); mapa centrado em Nampula
-- [ ] Passo 3: método de pagamento
-- [ ] `POST /api/checkout`: recalcula preços e taxa **no servidor**, valida stock, cria `Customer` + `Order` + `OrderItem` numa transacção, **reserva stock**
-- [ ] Página de confirmação `/pedido/[codigo]` com resumo, instruções de pagamento e estado actual
-- [ ] Botão WhatsApp continua disponível, mas com o código real do pedido já gravado
+## Fase 1 — Base técnica e segurança ✅
+- [x] Migração `middleware.ts` → `proxy.ts` commitada
+- [x] `requireAdmin()` em todos os route handlers de admin (testado: 401 sem sessão)
+- [x] Removida a rota `/api/dashboard` (não usada, expunha dados)
+- [x] Removidas dependências e ficheiros mortos (libsql, `dev.db`, `prisma.config.ts`, `src/generated/`)
+- [x] Validação `zod` em todas as APIs (`src/lib/validation.ts`), erros em PT (`src/lib/api.ts`), `apiFetch` no cliente
+- [x] Seed idempotente; README actualizado
 
-## Fase 5 — Pagamento
-- [ ] **Etapa A (manual, já):** cliente paga por M-Pesa/e-Mola para o número do negócio e submete a referência da transacção (e opcionalmente foto do comprovativo) na página do pedido → `Payment` fica "pendente"
-- [ ] Admin vê pagamentos pendentes, confirma ou rejeita → pedido passa a "pago/confirmado"
-- [ ] Mover números M-Pesa/e-Mola de constantes no código para configuração (env ou tabela `Settings`)
-- [ ] **Etapa B (opcional, depois):** integração automática (API M-Pesa Vodacom / agregador e-Mola) com webhook de confirmação — a decidir conforme contas disponíveis
+## Fase 2 — Modelo de dados ✅
+- [x] `Product` (tabela `BlockStock`): preço, mínimo, incremento, activo, imagem, ordem
+- [x] `DeliveryZone`, `Customer`, `OrderItem`, `Payment`, `OrderEvent`, `StockMovement`, `Setting`
+- [x] `Order` reformulado: número sequencial (`BM-0001`), token privado, entrega, subtotal/taxa/total, estado + estado de pagamento, motorista, datas
+- [x] Enums Prisma para estados; dinheiro em `Int` (meticais)
+- [x] Migração `20261121090000_vendas_pagamentos_stock` escrita à mão para **preservar** as encomendas existentes (renomeia colunas, converte tipos, preenche números/tokens) e carregar preços, zonas e configurações
+- [x] Testada numa cópia local do estado de produção: dados preservados, schema sem drift
 
-## Fase 6 — Confirmação, entrega e acompanhamento
-- [ ] Fluxo de estados: `pendente` → `pago` → `confirmado` → `em entrega` → `entregue` (+ `cancelado`)
-- [ ] Ao **entregar**: abater `available`/`reserved`/`total` e registar `StockMovement`
-- [ ] Ao **cancelar**: libertar reserva
-- [ ] Atribuir motorista (trabalhador com função Motorista) e data de entrega
-- [ ] Página pública "Acompanhar pedido" (código + telefone) — liga ao botão "Área do Cliente"
-- [ ] Notificação ao cliente via link WhatsApp pré-preenchido gerado pelo admin em cada mudança de estado
-- [ ] Recibo/factura simples imprimível (PDF ou página de impressão)
+## Fase 3 — Loja ligada à BD ✅
+- [x] Página inicial (Server Component) lê produtos, preços, stock e zonas da BD
+- [x] Cartões de produto com estado de stock (disponível / últimas unidades / esgotado) e ilustração por tipo
+- [x] Carrinho reescrito (`useSyncExternalStore`): sem salto na hidratação, sincroniza preços com o catálogo
+- [x] Gaveta do carrinho no cabeçalho; menu mobile
+- [x] `mock-data.ts` e `src/types` removidos
 
-## Fase 7 — Administração
-**Encomendas**
-- [ ] Lista com filtros (estado, data, pesquisa por cliente/código) e paginação
-- [ ] Página de detalhe da encomenda (itens, cliente, entrega, pagamentos, histórico de estados)
-- [ ] Encomenda manual (balcão/telefone) usando produtos reais em vez de só "valor"
-- [ ] Substituir `confirm()` por diálogo próprio
+## Fase 4 — Checkout ✅
+- [x] 3 passos: rever carrinho → dados e entrega → método de pagamento
+- [x] Validação no cliente (telefone moçambicano, endereço, stock, mínimos) e de novo no servidor
+- [x] `POST /api/checkout`: recalcula preços e taxa no servidor, reserva stock de forma atómica, cria cliente + encomenda + itens + histórico numa transacção
+- [x] Protecção contra abuso: máx. 3 encomendas por pagar por telefone
+- [x] Redireciona para a página privada do pedido
 
-**Produtos e preços**
-- [ ] Página `/produtos`: editar preço, mínimo, descrição, activar/desactivar
-- [ ] Gestão de zonas de entrega e taxas
+## Fase 5 — Pagamento ✅ (etapa A, manual)
+- [x] Página do pedido mostra o número M-Pesa/e-Mola (ou dados bancários) com botão copiar e o código do pedido como descritivo
+- [x] Cliente submete a referência da transacção → pagamento "em verificação"
+- [x] Admin confirma/rejeita; ao ficar totalmente pago a encomenda confirma-se sozinha
+- [x] Admin pode registar pagamentos (numerário, parciais)
+- [x] Números de pagamento em `/configuracoes` (tabela `Setting`), não no código
+- [ ] **Etapa B (futuro):** integração automática M-Pesa / e-Mola com webhook — depende de contas de API
 
-**Produção e stock**
-- [ ] Registo de produção abate cimento e areia do `MaterialStock`
-- [ ] Registar compra/entrada de materiais (actualiza `lastRestock`, fornecedor) — liga "Solicitar Suprimentos"
-- [ ] Histórico de movimentos de stock — liga "Ver Histórico de Entradas"
-- [ ] Histórico de produção (lista + filtro por data/trabalhador)
-- [ ] Ajuste manual de stock (quebras, contagem)
+## Fase 6 — Confirmação, entrega e acompanhamento ✅
+- [x] Estados `pendente → confirmado → em_entrega → entregue` (+ `cancelado`), com transições validadas
+- [x] Entregue: blocos saem do armazém; cancelado: reserva volta ao disponível (com movimentos de stock)
+- [x] Motorista (trabalhadores com função Motorista) e data prevista de entrega
+- [x] Página pública "Acompanhar pedido" (código + telefone)
+- [x] Botão "Avisar cliente" no admin: abre WhatsApp com mensagem pronta para o estado actual
+- [x] Recibo imprimível / PDF (página do pedido e detalhe no admin)
 
-**Trabalhadores**
-- [ ] Criar/editar/desactivar trabalhador ("Novo Registo")
-- [ ] Marcar presenças do dia
-- [ ] Registar empréstimo/adiantamento (actualiza `debt`)
-- [ ] Folha de salário mensal (salário − faltas − dívida)
+## Fase 7 — Administração ✅
+- [x] Encomendas: separadores por estado, filtro de pagamento, pesquisa (nome, telefone, código), paginação, vista mobile em cartões
+- [x] Detalhe da encomenda: itens, cliente, pagamentos, entrega, histórico, acções com confirmação
+- [x] Encomenda manual com produtos reais (reserva stock)
+- [x] Produtos: editar preço/mínimo/incremento/descrição/foto, activar/desactivar, ajuste manual de stock, histórico de movimentos
+- [x] Zonas de entrega: criar, editar, desactivar, apagar
+- [x] Produção: abate materiais, entrada de materiais, histórico de produção
+- [x] Equipa: criar/editar trabalhador, marcar presenças (clique no dia), empréstimos e reembolsos, resumo salarial
+- [x] Painel: acções pendentes, produção hoje vs ontem, recebido hoje, gráficos de 7 dias, alertas de stock de blocos e materiais
 
-**Dashboard**
-- [ ] Métricas reais: produção de hoje vs ontem, caixa do dia (pagamentos confirmados hoje), encomendas por pagar/por entregar
-- [ ] Gráfico de vendas e produção dos últimos 7/30 dias
-- [ ] "Ver todas" → `/encomendas`; alertas de stock baixo de blocos (não só materiais)
-
-## Fase 8 — Design e UX
-- [ ] Layout admin: adicionar `AdminBottomNav` em mobile, header com utilizador real da sessão + logout
-- [ ] Componentes de formulário reutilizáveis (usar `ui/input`, `ui/select`, `ui/label` em vez de classes repetidas)
-- [ ] Toasts de sucesso/erro e estados de loading consistentes (skeletons já existem)
-- [ ] Loja: imagens reais dos produtos, hero com foto, secção de confiança (testemunhos, garantia), FAQ
-- [ ] Ligar botões mortos: WhatsApp suporte (`wa.me`), telefone real, Termos e Privacidade (páginas simples)
-- [ ] Corrigir textos: Maputo → Nampula na metadata, © ano dinâmico
-- [ ] Revisão de acessibilidade (labels, contraste, foco, botões com `aria-label`)
-- [ ] Testar responsividade em telemóvel (maioria dos clientes)
-- [ ] SEO básico da loja (metadata, Open Graph, favicon próprio)
+## Fase 8 — Design e UX ✅
+- [x] Tokens de cor/tipografia em falta adicionados ao tema
+- [x] Loja: hero novo, garantias, catálogo, "como encomendar", entregas com taxas, FAQ, rodapé com WhatsApp e telefone reais
+- [x] Componentes reutilizáveis: `Field`/`TextInput`/`SelectInput`/`TextArea`/`Alert`, `Modal`
+- [x] Admin: sidebar com utilizador + logout, menu inferior em mobile, cabeçalhos com acções
+- [x] Páginas de Termos e Privacidade; metadata/SEO (Nampula, Open Graph); páginas privadas com `noindex`
+- [x] `confirm()` do browser substituído por diálogos próprios
+- [ ] Fotos reais dos produtos (basta colar o URL em Produtos → Editar)
+- [ ] Testar em telemóveis reais
 
 ## Fase 9 — Qualidade e deploy
-- [ ] `npm run lint` e `tsc --noEmit` sem erros
-- [ ] Testar o fluxo completo: pedido na loja → aparece no admin → pagamento confirmado → entrega → stock actualizado
-- [ ] Variáveis de ambiente na Vercel e migração em produção (`prisma migrate deploy`)
-- [ ] Backup/export simples das encomendas (CSV)
+- [x] `tsc --noEmit` e `eslint` sem erros nem avisos
+- [x] `npm run build` de produção passa
+- [x] Teste de ponta a ponta (78 verificações) contra BD local: loja, checkout, validações, stock, acompanhamento, pagamento, confirmação, entrega, cancelamento, limites, encomenda manual, produção, produtos, zonas, configurações, equipa
+- [x] Verificação visual no browser (loja, carrinho, checkout, pedido, login, encomendas, detalhe, painel)
+- [ ] **Aplicar migração no Neon + publicar na Vercel** (ver topo)
+- [ ] Export CSV das encomendas (opcional)
 
 ---
 
-## Ordem recomendada
-Fase 1 → 2 → 3 → 4 → 5A → 6 → 7 → 8 → 9 (5B quando houver contas de API de pagamento).
-A fase 8 (design) pode ir sendo feita em paralelo em cada ecrã que mexermos.
-
-## Decisões em aberto
-- Pagamento: começar manual (referência + confirmação do admin) ou já integrar API? → **Proposta: manual primeiro.**
-- Cliente precisa de conta com login, ou basta acompanhar por código + telefone? → **Proposta: código + telefone.**
-- Mais que um utilizador admin (ex.: gerente, vendedor) com permissões diferentes?
+## Ideias para depois
+- Integração automática M-Pesa / e-Mola (webhook confirma o pagamento sozinho)
+- Notificações automáticas por SMS/WhatsApp API
+- Vários utilizadores admin com permissões (gerente, vendedor, motorista)
+- Expirar automaticamente encomendas não pagas após X dias (liberta stock)
+- Relatórios mensais (vendas por produto, por zona, produtividade por trabalhador)
