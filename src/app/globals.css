@@ -70,6 +70,12 @@
   --color-tertiary-container: #ff9467;
   --color-on-tertiary-container: #762b05;
 
+  --color-surface: #f3fbf5;
+  --color-on-surface: #161d1a;
+  --color-on-primary: #ffffff;
+  --color-on-secondary: #2a1800;
+  --color-inverse-surface: #2b322e;
+
   --color-error: #ba1a1a;
   --color-on-error: #ffffff;
   --color-error-container: #ffdad6;
@@ -93,6 +99,13 @@
   --text-title-md: 18px;
   --text-title-md--line-height: 28px;
   --text-title-md--font-weight: 500;
+
+  --text-title-sm: 16px;
+  --text-title-sm--line-height: 24px;
+  --text-title-sm--font-weight: 500;
+
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
 
   --text-body-sm: 14px;
   --text-body-sm--line-height: 20px;

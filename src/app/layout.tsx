@@ -1,13 +1,11 @@
-// src/app/layout.tsx
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from "@/lib/cart-context";
 
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -16,8 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "BlokManager",
-  description: "Sistema de gestão de blocos de cimento — Maputo, Moçambique",
+  title: {
+    default: "BlokManager — Blocos de cimento em Nampula",
+    template: "%s · BlokManager",
+  },
+  description:
+    "Encomende blocos de cimento e pavê online, com entrega em Nampula, Nacala, Monapo, Angoche e Ilha de Moçambique. Pagamento por M-Pesa ou e-Mola.",
+  openGraph: {
+    title: "BlokManager — Blocos de cimento em Nampula",
+    description: "Blocos de cimento e pavê com entrega na província de Nampula. Pague por M-Pesa ou e-Mola.",
+    locale: "pt_MZ",
+    type: "website",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#006c4f",
 };
 
 export default function RootLayout({
@@ -30,11 +42,7 @@ export default function RootLayout({
       lang="pt-MZ"
       className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <CartProvider>
-          {children}
-        </CartProvider>
-      </body>
+      <body className="min-h-full flex flex-col bg-background text-on-surface">{children}</body>
     </html>
   );
 }
