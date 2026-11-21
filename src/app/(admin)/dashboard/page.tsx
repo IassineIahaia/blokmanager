@@ -55,7 +55,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex-1">
-      <AdminHeader title="Painel Geral" userName="João Silva" userRole="Administrador" />
+      <AdminHeader title="Painel Geral" userName="Issufo Pereira" userRole="Administrador" />
 
       <div className="p-4 md:p-8 space-y-6">
         {/* Metric cards */}
