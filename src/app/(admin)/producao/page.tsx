@@ -5,6 +5,8 @@ import { Plus, Package, Wrench, History, AlertTriangle, CheckCircle2, XCircle } 
 import { AdminHeader } from '@/components/shared/admin-header';
 import { Button } from '@/components/ui/button';
 import { StockProgressBar, MaterialLevelBar } from '@/components/shared/stock-progress-bar';
+import { apiFetch, errorMessage } from '@/lib/fetcher';
+import { BLOCK_TYPES } from '@/lib/validation';
 
 interface BlockStock {
   id: string;
@@ -31,7 +33,6 @@ interface Worker {
   name: string;
 }
 
-const BLOCK_TYPES = ['9cm', '12cm', '15cm', 'pave'];
 const BLOCK_LABELS: Record<string, string> = {
   '9cm': 'Bloco 9cm',
   '12cm': 'Bloco 12cm',
@@ -60,16 +61,19 @@ export default function ProducaoPage() {
 
   const loadData = useCallback(() => {
     Promise.all([
-      fetch('/api/stock').then(r => r.json()),
-      fetch('/api/workers').then(r => r.json()),
-    ]).then(([stockData, workersData]) => {
-      setBlockStocks(stockData.blockStocks);
-      setMaterialStocks(stockData.materialStocks);
-      setWorkers(workersData);
-      if (workersData.length > 0 && !form.workerId) {
-        setForm(f => ({ ...f, workerId: workersData[0].id }));
-      }
-    }).finally(() => setLoading(false));
+      apiFetch<{ blockStocks: BlockStock[]; materialStocks: MaterialStock[] }>('/api/stock'),
+      apiFetch<Worker[]>('/api/workers'),
+    ])
+      .then(([stockData, workersData]) => {
+        setBlockStocks(stockData.blockStocks);
+        setMaterialStocks(stockData.materialStocks);
+        setWorkers(workersData);
+        if (workersData.length > 0) {
+          setForm(f => (f.workerId ? f : { ...f, workerId: workersData[0].id }));
+        }
+      })
+      .catch(err => setError(errorMessage(err)))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
@@ -86,25 +90,30 @@ export default function ProducaoPage() {
       setError('Quantidade produzida deve ser maior que zero.');
       return;
     }
+    if (!form.workerId) { setError('Seleccione o responsável pela produção.'); return; }
     setSaving(true);
-    await fetch('/api/production', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        date: form.data,
-        workerId: form.workerId,
-        blockType: form.tipoBloco,
-        quantity: Number(form.quantidade),
-        cementBags: Number(form.sacosCimento) || 0,
-        sandM3: Number(form.m3Areia) || 0,
-        damaged: Number(form.danificados) || 0,
-      }),
-    });
-    setSaving(false);
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 3000);
-    setForm(f => ({ ...f, quantidade: '', sacosCimento: '', m3Areia: '', danificados: '' }));
-    loadData();
+    try {
+      await apiFetch('/api/production', {
+        method: 'POST',
+        body: {
+          date: form.data,
+          workerId: form.workerId,
+          blockType: form.tipoBloco,
+          quantity: Number(form.quantidade),
+          cementBags: Number(form.sacosCimento) || 0,
+          sandM3: Number(form.m3Areia) || 0,
+          damaged: Number(form.danificados) || 0,
+        },
+      });
+      setSubmitted(true);
+      setTimeout(() => setSubmitted(false), 3000);
+      setForm(f => ({ ...f, quantidade: '', sacosCimento: '', m3Areia: '', danificados: '' }));
+      loadData();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

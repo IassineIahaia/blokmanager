@@ -1,44 +1,38 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { ApiError, handler, parseBody, requireAdmin } from '@/lib/api'
+import { createProductionSchema } from '@/lib/validation'
 
-export async function GET() {
+export const GET = handler(async () => {
+  await requireAdmin()
   const entries = await prisma.productionEntry.findMany({
     include: { worker: { select: { name: true } } },
     orderBy: { date: 'desc' },
     take: 50,
   })
   return NextResponse.json(entries)
-}
+})
 
-export async function POST(req: Request) {
-  const body = await req.json()
-  const { date, workerId, blockType, quantity, cementBags, sandM3, damaged } = body
+export const POST = handler(async (req: Request) => {
+  await requireAdmin()
+  const data = await parseBody(req, createProductionSchema)
 
-  if (!date || !workerId || !blockType || !quantity) {
-    return NextResponse.json({ error: 'Campos obrigatórios em falta' }, { status: 400 })
+  const stock = await prisma.blockStock.findUnique({ where: { type: data.blockType } })
+  if (!stock) {
+    throw new ApiError(400, `Não existe stock configurado para o bloco "${data.blockType}".`)
   }
 
   // Cria o registo de produção e actualiza o stock atomicamente
   const [entry] = await prisma.$transaction([
-    prisma.productionEntry.create({
+    prisma.productionEntry.create({ data }),
+    prisma.blockStock.update({
+      where: { type: data.blockType },
       data: {
-        date: new Date(date),
-        workerId,
-        blockType,
-        quantity: Number(quantity),
-        cementBags: Number(cementBags) || 0,
-        sandM3: Number(sandM3) || 0,
-        damaged: Number(damaged) || 0,
-      },
-    }),
-    prisma.blockStock.updateMany({
-      where: { type: blockType },
-      data: {
-        available: { increment: Number(quantity) - Number(damaged || 0) },
-        total: { increment: Number(quantity) },
+        available: { increment: data.quantity - data.damaged },
+        total: { increment: data.quantity - data.damaged },
       },
     }),
   ])
 
   return NextResponse.json(entry, { status: 201 })
-}
+})

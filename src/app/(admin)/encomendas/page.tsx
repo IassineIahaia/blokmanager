@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { OrderStatus } from "@/types";
+import { apiFetch, errorMessage } from "@/lib/fetcher";
 
 interface Order {
   id: string;
@@ -39,12 +40,15 @@ export default function EncomendasPage() {
   const [cliente, setCliente] = useState("");
   const [valor, setValor] = useState("");
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const loadOrders = useCallback(() => {
-    setLoading(true);
-    fetch("/api/orders")
-      .then((r) => r.json())
-      .then(setOrders)
+    apiFetch<Order[]>("/api/orders")
+      .then((data) => {
+        setOrders(data);
+        setError(null);
+      })
+      .catch((err) => setError(errorMessage(err)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -55,31 +59,40 @@ export default function EncomendasPage() {
   async function handleCreate() {
     if (!cliente || !valor) return;
     setSaving(true);
-    await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cliente, valor: Number(valor) }),
-    });
-    setCliente("");
-    setValor("");
-    setShowForm(false);
-    setSaving(false);
-    loadOrders();
+    try {
+      await apiFetch("/api/orders", {
+        method: "POST",
+        body: { cliente, valor: Number(valor) },
+      });
+      setCliente("");
+      setValor("");
+      setShowForm(false);
+      setError(null);
+      loadOrders();
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function handleStatusChange(id: string, status: OrderStatus) {
-    await fetch(`/api/orders/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    loadOrders();
+    try {
+      await apiFetch(`/api/orders/${id}`, { method: "PATCH", body: { status } });
+      loadOrders();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   async function handleDelete(id: string) {
     if (!confirm("Eliminar esta encomenda?")) return;
-    await fetch(`/api/orders/${id}`, { method: "DELETE" });
-    loadOrders();
+    try {
+      await apiFetch(`/api/orders/${id}`, { method: "DELETE" });
+      loadOrders();
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   }
 
   const total = orders.reduce((s, o) => s + o.valor, 0);
@@ -95,6 +108,15 @@ export default function EncomendasPage() {
       />
 
       <div className="p-4 md:p-8 space-y-6">
+        {error && (
+          <div className="rounded-md border border-error/40 bg-error-container px-4 py-3 text-body-sm text-on-error-container flex items-center justify-between gap-4">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} aria-label="Fechar aviso">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
         {/* Métricas rápidas */}
         <div className="grid grid-cols-3 gap-4">
           <div className="rounded-md border border-outline-variant bg-surface-container-lowest p-4">

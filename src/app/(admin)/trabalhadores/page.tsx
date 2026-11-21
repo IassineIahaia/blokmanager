@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/shared/empty-state";
 import type { Worker } from "@/types";
+import { apiFetch, errorMessage } from "@/lib/fetcher";
 
 type DbWorker = Worker & {
   attendance: { day: number; present: boolean; month: number; year: number }[];
@@ -22,13 +23,15 @@ export default function TrabalhadoresPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    fetch("/api/workers")
-      .then((r) => r.json())
+    apiFetch<DbWorker[]>("/api/workers")
       .then((data) => {
         setWorkers(data);
         if (data.length > 0) setSelectedId(data[0].id);
       })
+      .catch((err) => setError(errorMessage(err)))
       .finally(() => setLoading(false));
   }, []);
 
@@ -51,6 +54,12 @@ export default function TrabalhadoresPage() {
             Novo Registo
           </Button>
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-md border border-error/40 bg-error-container px-4 py-3 text-body-sm text-on-error-container">
+            {error}
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-12 text-on-surface-variant">A carregar trabalhadores...</div>

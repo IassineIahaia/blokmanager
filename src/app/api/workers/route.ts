@@ -1,37 +1,32 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handler, parseBody, requireAdmin } from '@/lib/api'
+import { createWorkerSchema } from '@/lib/validation'
 
-export async function GET() {
+export const GET = handler(async () => {
+  await requireAdmin()
+  const now = new Date()
   const workers = await prisma.worker.findMany({
     include: {
       attendance: {
-        where: {
-          month: new Date().getMonth() + 1,
-          year: new Date().getFullYear(),
-        },
+        where: { month: now.getMonth() + 1, year: now.getFullYear() },
         orderBy: { day: 'asc' },
       },
-      loans: {
-        orderBy: { date: 'desc' },
-      },
+      loans: { orderBy: { date: 'desc' } },
     },
     orderBy: { createdAt: 'asc' },
   })
 
   return NextResponse.json(workers)
-}
+})
 
-export async function POST(req: Request) {
-  const body = await req.json()
-  const { name, role, level, salary } = body
-
-  if (!name || !role || !salary) {
-    return NextResponse.json({ error: 'Campos obrigatórios em falta' }, { status: 400 })
-  }
+export const POST = handler(async (req: Request) => {
+  await requireAdmin()
+  const { name, role, level, salary } = await parseBody(req, createWorkerSchema)
 
   const worker = await prisma.worker.create({
-    data: { name, role, level, salary: Number(salary), debt: 0 },
+    data: { name, role, level: level || null, salary, debt: 0 },
   })
 
   return NextResponse.json(worker, { status: 201 })
-}
+})

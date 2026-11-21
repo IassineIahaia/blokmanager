@@ -1,32 +1,20 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { handler, parseBody, requireAdmin, type IdContext } from '@/lib/api'
+import { updateOrderSchema } from '@/lib/validation'
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const PATCH = handler(async (req: Request, { params }: IdContext) => {
+  await requireAdmin()
   const { id } = await params
-  const body = await req.json()
-  const { status } = body
+  const { status } = await parseBody(req, updateOrderSchema)
 
-  const validStatuses = ['pendente', 'confirmado', 'entregue', 'cancelado']
-  if (!validStatuses.includes(status)) {
-    return NextResponse.json({ error: 'Status inválido' }, { status: 400 })
-  }
-
-  const order = await prisma.order.update({
-    where: { id },
-    data: { status },
-  })
-
+  const order = await prisma.order.update({ where: { id }, data: { status } })
   return NextResponse.json(order)
-}
+})
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const DELETE = handler(async (_req: Request, { params }: IdContext) => {
+  await requireAdmin()
   const { id } = await params
   await prisma.order.delete({ where: { id } })
   return NextResponse.json({ ok: true })
-}
+})
