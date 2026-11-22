@@ -56,11 +56,11 @@ async function main() {
   }
 
   const settings = {
-    business_name: 'BlokManager Moz',
-    business_phone: '+258 84 280 0063',
-    whatsapp_number: '258842800063',
-    mpesa_number: '258842800063',
-    emola_number: '258873800063',
+    business_name: 'SSP',
+    business_phone: '+258 87 654 5853',
+    whatsapp_number: '258876545853',
+    mpesa_number: '258844490202',
+    emola_number: '258876545853',
   }
   for (const [key, value] of Object.entries(settings)) {
     await prisma.setting.upsert({ where: { key }, create: { key, value }, update: {} })

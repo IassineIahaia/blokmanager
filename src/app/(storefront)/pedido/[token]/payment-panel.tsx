@@ -76,10 +76,10 @@ export function PaymentPanel(props: Props) {
   }
 
   return (
-    <section className="overflow-hidden rounded-lg border-2 border-primary/40 bg-white print:hidden">
-      <div className="bg-primary/5 px-5 py-4">
-        <h2 className="font-semibold text-on-surface">Pagar {formatMT(props.remaining)}</h2>
-        <p className="text-body-sm text-on-surface-variant">
+    <section className="overflow-hidden rounded-2xl border-2 border-black/20 bg-white print:hidden">
+      <div className="bg-black/[0.03] px-5 py-4">
+        <h2 className="font-semibold text-black">Pagar {formatMT(props.remaining)}</h2>
+        <p className="text-sm text-black/60">
           Os blocos ficam reservados. A entrega é agendada depois de confirmarmos o pagamento.
         </p>
       </div>
@@ -107,8 +107,8 @@ export function PaymentPanel(props: Props) {
               aria-selected={method === m.id}
               onClick={() => setMethod(m.id)}
               className={cn(
-                "h-10 flex-1 rounded-md border text-body-sm font-medium transition-colors",
-                method === m.id ? "border-primary bg-primary text-on-primary" : "border-outline-variant hover:bg-surface-container-low",
+                "h-10 flex-1 rounded-xl border text-sm font-medium transition-colors",
+                method === m.id ? "border-black bg-black text-white" : "border-black/5 hover:bg-black/5",
               )}
             >
               {m.label}
@@ -117,18 +117,18 @@ export function PaymentPanel(props: Props) {
         </div>
 
         {number ? (
-          <ol className="space-y-3 text-body-sm">
+          <ol className="space-y-3 text-sm">
             <li className="flex gap-3">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] font-bold text-on-primary">1</span>
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-black text-[12px] font-bold text-white">1</span>
               <div className="flex-1">
-                <p className="text-on-surface">
+                <p className="text-black">
                   Envie <b>{formatMT(props.remaining)}</b> por {method === "mpesa" ? "M-Pesa" : "e-Mola"} para:
                 </p>
-                <div className="mt-2 flex items-center justify-between rounded-md border border-outline-variant bg-surface-container-low px-4 py-3">
-                  <span className="text-[20px] font-bold tracking-wide text-on-surface tabular-nums">{formatPhone(number)}</span>
+                <div className="mt-2 flex items-center justify-between rounded-xl border border-black/5 bg-black/[0.03] px-4 py-3">
+                  <span className="text-[20px] font-bold tracking-wide text-black tabular-nums">{formatPhone(number)}</span>
                   <button
                     onClick={() => copy(number.replace(/^258/, ""), "num")}
-                    className="flex items-center gap-1 text-body-sm font-medium text-primary"
+                    className="flex items-center gap-1 text-sm font-medium text-black"
                   >
                     {copied === "num" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                     {copied === "num" ? "Copiado" : "Copiar"}
@@ -137,33 +137,33 @@ export function PaymentPanel(props: Props) {
               </div>
             </li>
             <li className="flex gap-3">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] font-bold text-on-primary">2</span>
-              <p className="text-on-surface">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-black text-[12px] font-bold text-white">2</span>
+              <p className="text-black">
                 Se o serviço pedir uma descrição, escreva o código do pedido{" "}
-                <button onClick={() => copy(props.code, "code")} className="font-bold text-primary underline">
+                <button onClick={() => copy(props.code, "code")} className="font-bold text-black underline">
                   {props.code}
                 </button>
-                {copied === "code" && <span className="ml-1 text-primary">(copiado)</span>}.
+                {copied === "code" && <span className="ml-1 text-black">(copiado)</span>}.
               </p>
             </li>
             <li className="flex gap-3">
-              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-[12px] font-bold text-on-primary">3</span>
-              <p className="text-on-surface">Escreva abaixo a referência da transacção que vem na SMS de confirmação.</p>
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-black text-[12px] font-bold text-white">3</span>
+              <p className="text-black">Escreva abaixo a referência da transacção que vem na SMS de confirmação.</p>
             </li>
           </ol>
         ) : (
-          <div className="space-y-2 text-body-sm">
-            <p className="text-on-surface">
+          <div className="space-y-2 text-sm">
+            <p className="text-black">
               Transfira <b>{formatMT(props.remaining)}</b> para a conta abaixo, com o descritivo <b>{props.code}</b>:
             </p>
-            <pre className="whitespace-pre-wrap rounded-md border border-outline-variant bg-surface-container-low p-4 font-sans text-on-surface">
+            <pre className="whitespace-pre-wrap rounded-xl border border-black/5 bg-black/[0.03] p-4 font-sans text-black">
               {props.bankDetails}
             </pre>
           </div>
         )}
 
         {showForm && (
-          <form onSubmit={submit} className="space-y-4 border-t border-outline-variant pt-5">
+          <form onSubmit={submit} className="space-y-4 border-t border-black/5 pt-5">
             {error && <Alert onClose={() => setError(null)}>{error}</Alert>}
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Referência da transacção" htmlFor="reference" required hint="Ex.: 8KJ3HX2LQ1">
@@ -183,7 +183,7 @@ export function PaymentPanel(props: Props) {
                 <TextInput id="payerPhone" type="tel" inputMode="tel" value={payerPhone} onChange={(e) => setPayerPhone(e.target.value)} />
               </Field>
             </div>
-            <Button type="submit" disabled={submitting} className="h-11 w-full bg-primary font-semibold text-on-primary hover:bg-primary/90 sm:w-auto sm:px-8">
+            <Button type="submit" disabled={submitting} className="h-11 w-full bg-black font-semibold text-white hover:bg-black/85 sm:w-auto sm:px-8">
               {submitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Já paguei — enviar referência
             </Button>

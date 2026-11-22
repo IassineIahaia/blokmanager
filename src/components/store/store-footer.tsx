@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, MessageCircle, Phone } from "lucide-react";
+import { ArrowRight, MapPin, MessageCircle, Phone } from "lucide-react";
 import { whatsappLink } from "@/lib/format";
 
 interface StoreFooterProps {
@@ -12,50 +12,58 @@ export function StoreFooter({ businessName, businessPhone, whatsappNumber }: Sto
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto border-t border-outline-variant bg-surface-container-low print:hidden">
-      <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3 md:px-8">
-        <div>
-          <p className="font-semibold text-on-surface">{businessName}</p>
-          <p className="mt-2 text-body-sm leading-relaxed text-on-surface-variant">
-            Fábrica de blocos de cimento e pavê. Produção própria e entrega em toda a província de Nampula.
-          </p>
-          <p className="mt-3 flex items-center gap-1.5 text-body-sm text-on-surface-variant">
-            <MapPin className="h-4 w-4" /> Nampula, Moçambique
-          </p>
+    <footer className="relative z-10 border-t border-white/10 bg-black px-6 py-16 text-white print:hidden md:px-12">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid gap-12 md:grid-cols-12">
+          <div className="md:col-span-6">
+            <div className="mb-4 flex items-center gap-3">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/brand/ssp-logo-white.png" alt={`${businessName}, SU, Lda`} width={800} height={238} className="h-10 w-auto" />
+            </div>
+            <p className="mb-8 max-w-sm text-white/50">
+              Blocos de cimento e pavê produzidos em Nampula. Stock real, pagamento pelo telemóvel e entrega na sua obra.
+            </p>
+            <a
+              href={whatsappLink(whatsappNumber, "Olá! Gostaria de um orçamento para blocos.")}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 font-medium text-black transition-colors hover:bg-neutral-200"
+            >
+              <MessageCircle className="h-4 w-4" /> Pedir orçamento
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </a>
+          </div>
+
+          <div className="flex flex-col gap-4 md:col-span-3">
+            <h4 className="mb-2 text-lg font-medium">Loja</h4>
+            <Link href="/#catalogo" className="text-white/60 transition-colors hover:text-white">Catálogo</Link>
+            <Link href="/#detalhes" className="text-white/60 transition-colors hover:text-white">Especificações</Link>
+            <Link href="/#entregas" className="text-white/60 transition-colors hover:text-white">Entregas</Link>
+            <Link href="/acompanhar" className="text-white/60 transition-colors hover:text-white">Acompanhar pedido</Link>
+          </div>
+
+          <div className="flex flex-col gap-4 md:col-span-3">
+            <h4 className="mb-2 text-lg font-medium">Contacto</h4>
+            <a href={`tel:${businessPhone.replace(/\s/g, "")}`} className="inline-flex items-center gap-2 text-white/60 transition-colors hover:text-white">
+              <Phone className="h-4 w-4" /> {businessPhone}
+            </a>
+            <a href="tel:+258844490202" className="inline-flex items-center gap-2 text-white/60 transition-colors hover:text-white">
+              <Phone className="h-4 w-4" /> +258 84 449 0202
+            </a>
+            <span className="inline-flex items-start gap-2 text-white/60">
+              <MapPin className="mt-1 h-4 w-4 shrink-0" />
+              <span>Muahivire Expansão, próximo ao Hospital do Control, Nampula</span>
+            </span>
+          </div>
         </div>
 
-        <div className="text-body-sm">
-          <p className="mb-3 font-semibold text-on-surface">Loja</p>
-          <ul className="space-y-2 text-on-surface-variant">
-            <li><Link href="/#catalogo" className="hover:text-primary">Catálogo</Link></li>
-            <li><Link href="/acompanhar" className="hover:text-primary">Acompanhar pedido</Link></li>
-            <li><Link href="/termos" className="hover:text-primary">Termos de uso</Link></li>
-            <li><Link href="/privacidade" className="hover:text-primary">Privacidade</Link></li>
-          </ul>
+        <div className="mt-16 flex flex-col justify-between gap-4 border-t border-white/10 pt-8 text-sm text-white/40 md:flex-row">
+          <p>© {year} {businessName}, SU, Lda. Todos os direitos reservados.</p>
+          <div className="flex gap-6">
+            <Link href="/privacidade" className="hover:text-white">Privacidade</Link>
+            <Link href="/termos" className="hover:text-white">Termos</Link>
+          </div>
         </div>
-
-        <div className="text-body-sm">
-          <p className="mb-3 font-semibold text-on-surface">Fale connosco</p>
-          <a
-            href={`tel:${businessPhone.replace(/\s/g, "")}`}
-            className="flex items-center gap-2 text-on-surface-variant hover:text-primary"
-          >
-            <Phone className="h-4 w-4" /> {businessPhone}
-          </a>
-          <a
-            href={whatsappLink(whatsappNumber, "Olá! Tenho uma dúvida sobre os blocos.")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 inline-flex h-10 items-center gap-2 rounded-md bg-[#25D366] px-4 font-medium text-white hover:bg-[#1fb957]"
-          >
-            <MessageCircle className="h-4 w-4" /> WhatsApp
-          </a>
-        </div>
-      </div>
-      <div className="border-t border-outline-variant">
-        <p className="mx-auto max-w-6xl px-4 py-4 text-[12px] text-on-surface-variant md:px-8">
-          © {year} {businessName}. Todos os direitos reservados.
-        </p>
       </div>
     </footer>
   );

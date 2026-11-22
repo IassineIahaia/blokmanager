@@ -121,7 +121,7 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
   if (!hydrated) {
     return (
       <div className="grid min-h-[50vh] place-items-center">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-black" />
       </div>
     );
   }
@@ -129,12 +129,12 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
   if (cart.length === 0) {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center px-4 py-20 text-center">
-        <ShoppingCart className="h-12 w-12 text-outline" />
-        <h1 className="mt-4 text-[22px] font-semibold text-on-surface">O seu carrinho está vazio</h1>
-        <p className="mt-2 text-body-sm text-on-surface-variant">Escolha os blocos no catálogo para fazer uma encomenda.</p>
+        <ShoppingCart className="h-12 w-12 text-black/30" />
+        <h1 className="mt-4 text-[22px] font-semibold text-black">O seu carrinho está vazio</h1>
+        <p className="mt-2 text-sm text-black/60">Escolha os blocos no catálogo para fazer uma encomenda.</p>
         <Link
           href="/#catalogo"
-          className="mt-6 inline-flex h-11 items-center rounded-md bg-primary px-6 font-semibold text-on-primary hover:bg-primary/90"
+          className="mt-6 inline-flex h-11 items-center rounded-xl bg-black px-6 font-semibold text-white hover:bg-black/85"
         >
           Ver catálogo
         </Link>
@@ -143,13 +143,13 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-28 pt-6 md:px-8 md:pb-16">
-      <Link href="/#catalogo" className="inline-flex items-center gap-1 text-body-sm text-on-surface-variant hover:text-on-surface">
+    <div className="mx-auto max-w-7xl px-4 pb-28 pt-6 md:px-8 md:pb-16">
+      <Link href="/#catalogo" className="inline-flex items-center gap-1 text-sm text-black/60 hover:text-black">
         <ChevronLeft className="h-4 w-4" /> Continuar a comprar
       </Link>
 
       {/* Indicador de passos */}
-      <ol className="mt-4 flex items-center rounded-lg border border-outline-variant bg-white px-4 py-3">
+      <ol className="mt-4 flex items-center rounded-3xl border border-black/5 bg-white/60 backdrop-blur px-4 py-3">
         {STEPS.map((s, i) => (
           <li key={s.n} className="flex flex-1 items-center last:flex-none">
             <button
@@ -160,16 +160,16 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
               <span
                 className={cn(
                   "grid h-7 w-7 place-items-center rounded-full text-[12px] font-bold",
-                  s.n <= step ? "bg-primary text-on-primary" : "bg-surface-container-high text-on-surface-variant",
+                  s.n <= step ? "bg-black text-white" : "bg-black/5 text-black/60",
                 )}
               >
                 {s.n < step ? <Check className="h-4 w-4" /> : s.n}
               </span>
-              <span className={cn("text-body-sm font-medium", s.n === step ? "text-on-surface" : "text-on-surface-variant", "hidden sm:inline")}>
+              <span className={cn("text-sm font-medium", s.n === step ? "text-black" : "text-black/60", "hidden sm:inline")}>
                 {s.label}
               </span>
             </button>
-            {i < STEPS.length - 1 && <span className={cn("mx-3 h-px flex-1", s.n < step ? "bg-primary" : "bg-outline-variant")} />}
+            {i < STEPS.length - 1 && <span className={cn("mx-3 h-px flex-1", s.n < step ? "bg-black" : "bg-black/10")} />}
           </li>
         ))}
       </ol>
@@ -180,8 +180,8 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
 
           {/* ── Passo 1: carrinho ── */}
           {step === 1 && (
-            <section className="rounded-lg border border-outline-variant bg-white">
-              <h1 className="border-b border-outline-variant px-5 py-4 text-title-md font-semibold text-on-surface">
+            <section className="rounded-3xl border border-black/5 bg-white/60 backdrop-blur">
+              <h1 className="border-b border-black/5 px-5 py-4 text-lg font-medium tracking-tight text-black">
                 Reveja a sua encomenda
               </h1>
               {cartIssues.length > 0 && (
@@ -192,34 +192,34 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
                   </Alert>
                 </div>
               )}
-              <ul className="divide-y divide-outline-variant px-5">
+              <ul className="divide-y divide-black/5 px-5">
                 {cart.map((item) => {
                   const p = byId.get(item.productId);
                   return (
                     <li key={item.productId} className="flex flex-wrap items-center gap-4 py-4">
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-on-surface">{item.label}</p>
-                        <p className="text-body-sm text-on-surface-variant">
+                        <p className="font-medium text-black">{item.label}</p>
+                        <p className="text-sm text-black/60">
                           {formatMT(item.price)} / un.
                           {p && ` · ${formatNumber(p.available)} em stock`}
                         </p>
                       </div>
-                      <div className="flex items-center rounded-md border border-outline-variant">
-                        <button onClick={() => stepQty(item.productId, -1)} className="grid h-10 w-10 place-items-center hover:bg-surface-container-low" aria-label="Diminuir">
+                      <div className="flex items-center rounded-xl border border-black/5">
+                        <button onClick={() => stepQty(item.productId, -1)} className="grid h-10 w-10 place-items-center hover:bg-black/5" aria-label="Diminuir">
                           <Minus className="h-4 w-4" />
                         </button>
-                        <span className="w-16 text-center text-body-sm font-semibold tabular-nums">{formatNumber(item.quantity)}</span>
+                        <span className="w-16 text-center text-sm font-semibold tabular-nums">{formatNumber(item.quantity)}</span>
                         <button
                           onClick={() => stepQty(item.productId, 1)}
                           disabled={!!p && item.quantity + item.orderStep > p.available}
-                          className="grid h-10 w-10 place-items-center hover:bg-surface-container-low disabled:opacity-40"
+                          className="grid h-10 w-10 place-items-center hover:bg-black/5 disabled:opacity-40"
                           aria-label="Aumentar"
                         >
                           <Plus className="h-4 w-4" />
                         </button>
                       </div>
-                      <p className="w-28 text-right font-semibold tabular-nums text-on-surface">{formatMT(item.price * item.quantity)}</p>
-                      <button onClick={() => removeItem(item.productId)} className="rounded-md p-2 text-on-surface-variant hover:bg-error-container hover:text-error" aria-label={`Remover ${item.label}`}>
+                      <p className="w-28 text-right font-semibold tabular-nums text-black">{formatMT(item.price * item.quantity)}</p>
+                      <button onClick={() => removeItem(item.productId)} className="rounded-xl p-2 text-black/60 hover:bg-rose-50 hover:text-rose-600" aria-label={`Remover ${item.label}`}>
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </li>
@@ -231,10 +231,10 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
 
           {/* ── Passo 2: dados e entrega ── */}
           {step === 2 && (
-            <section className="space-y-6 rounded-lg border border-outline-variant bg-white p-5">
+            <section className="space-y-6 rounded-3xl border border-black/5 bg-white/60 backdrop-blur p-5">
               <div>
-                <h1 className="text-title-md font-semibold text-on-surface">Os seus dados</h1>
-                <p className="text-body-sm text-on-surface-variant">Usamos o telefone para confirmar o pagamento e combinar a entrega.</p>
+                <h1 className="text-lg font-medium tracking-tight text-black">Os seus dados</h1>
+                <p className="text-sm text-black/60">Usamos o telefone para confirmar o pagamento e combinar a entrega.</p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Nome completo ou empresa" htmlFor="customerName" error={errors.customerName} required>
@@ -245,8 +245,8 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
                 </Field>
               </div>
 
-              <div className="border-t border-outline-variant pt-5">
-                <h2 className="text-title-md font-semibold text-on-surface">Entrega</h2>
+              <div className="border-t border-black/5 pt-5">
+                <h2 className="text-lg font-medium tracking-tight text-black">Entrega</h2>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field label="Zona de entrega" htmlFor="zoneId" error={errors.zoneId} required>
@@ -273,10 +273,10 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
 
           {/* ── Passo 3: pagamento ── */}
           {step === 3 && (
-            <section className="space-y-5 rounded-lg border border-outline-variant bg-white p-5">
+            <section className="space-y-5 rounded-3xl border border-black/5 bg-white/60 backdrop-blur p-5">
               <div>
-                <h1 className="text-title-md font-semibold text-on-surface">Como vai pagar?</h1>
-                <p className="text-body-sm text-on-surface-variant">
+                <h1 className="text-lg font-medium tracking-tight text-black">Como vai pagar?</h1>
+                <p className="text-sm text-black/60">
                   Depois de confirmar, mostramos o número para onde enviar o pagamento e o seu código de pedido.
                 </p>
               </div>
@@ -294,25 +294,25 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
                     aria-checked={method === m.id}
                     onClick={() => setMethod(m.id)}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg border-2 p-4 text-left transition-colors",
-                      method === m.id ? "border-primary bg-primary/5" : "border-outline-variant hover:bg-surface-container-low",
+                      "flex items-center gap-3 rounded-2xl border-2 p-4 text-left transition-colors",
+                      method === m.id ? "border-black bg-black/[0.03]" : "border-black/5 hover:bg-black/5",
                     )}
                   >
-                    <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-md font-bold text-white", m.badge)}>
+                    <span className={cn("grid h-10 w-10 shrink-0 place-items-center rounded-xl font-bold text-white", m.badge)}>
                       {m.short || <Landmark className="h-5 w-5" />}
                     </span>
                     <span className="flex-1">
-                      <span className="block font-semibold text-on-surface">{m.label}</span>
-                      <span className="block text-[12px] text-on-surface-variant">{m.sub}</span>
+                      <span className="block font-semibold text-black">{m.label}</span>
+                      <span className="block text-[12px] text-black/60">{m.sub}</span>
                     </span>
-                    <span className={cn("grid h-5 w-5 place-items-center rounded-full border-2", method === m.id ? "border-primary" : "border-outline-variant")}>
-                      {method === m.id && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}
+                    <span className={cn("grid h-5 w-5 place-items-center rounded-full border-2", method === m.id ? "border-black" : "border-black/5")}>
+                      {method === m.id && <span className="h-2.5 w-2.5 rounded-full bg-black" />}
                     </span>
                   </button>
                 ))}
               </div>
 
-              <ol className="space-y-2 rounded-lg bg-surface-container-low p-4 text-body-sm text-on-surface">
+              <ol className="space-y-2 rounded-2xl bg-black/[0.03] p-4 text-sm text-black">
                 <li><b>1.</b> Confirme a encomenda: os blocos ficam reservados para si.</li>
                 <li><b>2.</b> Envie <b>{formatMT(total)}</b> para o número que aparece no ecrã seguinte.</li>
                 <li><b>3.</b> Escreva a referência da transacção (vem na SMS de confirmação).</li>
@@ -327,42 +327,42 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
                     setAcceptTerms(e.target.checked);
                     setErrors((er) => ({ ...er, terms: "" }));
                   }}
-                  className="mt-0.5 h-4 w-4 accent-primary"
+                  className="mt-0.5 h-4 w-4 accent-black"
                 />
-                <span className="text-body-sm text-on-surface-variant">
+                <span className="text-sm text-black/60">
                   Li e aceito os{" "}
-                  <Link href="/termos" target="_blank" className="text-primary underline">termos de uso</Link>. A entrega é feita após a confirmação do pagamento.
+                  <Link href="/termos" target="_blank" className="text-black underline">termos de uso</Link>. A entrega é feita após a confirmação do pagamento.
                 </span>
               </label>
-              {errors.terms && <p className="text-[12px] font-medium text-error">{errors.terms}</p>}
+              {errors.terms && <p className="text-[12px] font-medium text-rose-600">{errors.terms}</p>}
             </section>
           )}
         </div>
 
         {/* ── Resumo ── */}
-        <aside className="h-fit space-y-4 rounded-lg border border-outline-variant bg-white p-5 lg:sticky lg:top-24">
-          <h2 className="font-semibold text-on-surface">Resumo</h2>
-          <ul className="space-y-2 text-body-sm">
+        <aside className="h-fit space-y-4 rounded-3xl border border-black/5 bg-white/60 backdrop-blur p-5 lg:sticky lg:top-24">
+          <h2 className="font-semibold text-black">Resumo</h2>
+          <ul className="space-y-2 text-sm">
             {cart.map((i) => (
               <li key={i.productId} className="flex justify-between gap-2">
-                <span className="text-on-surface-variant">{i.label} × {formatNumber(i.quantity)}</span>
-                <span className="font-medium tabular-nums text-on-surface">{formatMT(i.price * i.quantity)}</span>
+                <span className="text-black/60">{i.label} × {formatNumber(i.quantity)}</span>
+                <span className="font-medium tabular-nums text-black">{formatMT(i.price * i.quantity)}</span>
               </li>
             ))}
           </ul>
-          <div className="space-y-2 border-t border-outline-variant pt-3 text-body-sm">
+          <div className="space-y-2 border-t border-black/5 pt-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-on-surface-variant">Subtotal</span>
+              <span className="text-black/60">Subtotal</span>
               <span className="tabular-nums">{formatMT(totalPrice)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-on-surface-variant">Entrega{zone ? ` (${zone.name})` : ""}</span>
+              <span className="text-black/60">Entrega{zone ? ` (${zone.name})` : ""}</span>
               <span className="tabular-nums">{step >= 2 ? formatMT(fee) : "—"}</span>
             </div>
           </div>
-          <div className="flex items-baseline justify-between border-t border-outline-variant pt-3">
+          <div className="flex items-baseline justify-between border-t border-black/5 pt-3">
             <span className="font-semibold">Total</span>
-            <span className="text-[22px] font-bold text-primary tabular-nums">{formatMT(step >= 2 ? total : totalPrice)}</span>
+            <span className="text-[22px] font-bold text-black tabular-nums">{formatMT(step >= 2 ? total : totalPrice)}</span>
           </div>
 
           <div className="hidden gap-2 lg:flex">
@@ -373,16 +373,16 @@ export function CheckoutClient({ products, zones, hasBankDetails }: Props) {
             )}
             <PrimaryAction step={step} submitting={submitting} disabled={step === 1 && cartIssues.length > 0} onNext={() => goTo((step + 1) as Step)} onSubmit={submit} />
           </div>
-          <p className="flex items-center justify-center gap-1.5 text-[12px] text-on-surface-variant">
+          <p className="flex items-center justify-center gap-1.5 text-[12px] text-black/60">
             <Lock className="h-3.5 w-3.5" /> Os preços são confirmados pelo servidor.
           </p>
         </aside>
       </div>
 
       {/* Barra fixa em mobile */}
-      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-outline-variant bg-white px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-3 border-t border-black/5 bg-white px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.06)] lg:hidden">
         <div className="flex-1">
-          <p className="text-[11px] uppercase text-on-surface-variant">Total</p>
+          <p className="text-[11px] uppercase text-black/60">Total</p>
           <p className="font-bold tabular-nums">{formatMT(step >= 2 ? total : totalPrice)}</p>
         </div>
         {step > 1 && (
@@ -413,7 +413,7 @@ function PrimaryAction({
     <Button
       onClick={step === 3 ? onSubmit : onNext}
       disabled={disabled || submitting}
-      className="h-12 flex-1 bg-primary font-semibold text-on-primary hover:bg-primary/90"
+      className="h-12 flex-1 bg-black font-semibold text-white hover:bg-black/85"
     >
       {submitting ? (
         <>

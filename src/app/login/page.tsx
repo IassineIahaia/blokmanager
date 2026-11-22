@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
-import { Loader2, Lock } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, Field, TextInput } from '@/components/ui/field'
 
@@ -39,10 +39,9 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-lg bg-primary text-on-primary">
-            <Lock className="h-5 w-5" />
-          </span>
-          <h1 className="mt-4 text-2xl font-semibold text-on-surface">BlokManager</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/brand/ssp-logo.png" alt="SSP" width={800} height={238} className="mx-auto h-12 w-auto" />
+          <h1 className="sr-only">SSP — entrar</h1>
           <p className="mt-1 text-body-sm text-on-surface-variant">Área de administração</p>
         </div>
 

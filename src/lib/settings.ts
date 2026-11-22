@@ -2,11 +2,11 @@ import 'server-only'
 import { prisma } from '@/lib/prisma'
 
 export const SETTING_DEFAULTS = {
-  business_name: 'BlokManager Moz',
-  business_phone: '+258 84 280 0063',
-  whatsapp_number: '258842800063',
-  mpesa_number: '258842800063',
-  emola_number: '258873800063',
+  business_name: 'SSP',
+  business_phone: '+258 87 654 5853',
+  whatsapp_number: '258876545853',
+  mpesa_number: '258844490202',
+  emola_number: '258876545853',
   bank_details: '',
 } as const
 

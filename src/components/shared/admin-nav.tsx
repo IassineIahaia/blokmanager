@@ -50,18 +50,10 @@ export function AdminSidebar({ pendingVerification = 0 }: { pendingVerification?
 
   return (
     <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-outline-variant bg-surface-container-lowest md:flex">
-      <div className="flex items-center gap-2 px-6 py-6">
-        <span className="grid h-8 w-8 place-items-center rounded-md bg-primary text-on-primary">
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
-            <rect x="2" y="5" width="9" height="6" rx="1" />
-            <rect x="13" y="5" width="9" height="6" rx="1" />
-            <rect x="7" y="13" width="10" height="6" rx="1" />
-          </svg>
-        </span>
-        <div>
-          <p className="font-semibold leading-tight text-on-surface">BlokManager</p>
-          <p className="text-[11px] uppercase tracking-wide text-on-surface-variant">Administração</p>
-        </div>
+      <div className="px-6 py-6">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/brand/ssp-logo.png" alt="SSP" width={800} height={238} className="h-8 w-auto" />
+        <p className="mt-2 text-[11px] uppercase tracking-wide text-on-surface-variant">Administração</p>
       </div>
 
       <nav className="flex-1 space-y-1 px-3">

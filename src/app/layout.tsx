@@ -1,11 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+const geist = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -15,13 +14,13 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "BlokManager — Blocos de cimento em Nampula",
-    template: "%s · BlokManager",
+    default: "SSP — Blocos de cimento em Nampula",
+    template: "%s · SSP",
   },
   description:
     "Encomende blocos de cimento e pavê online, com entrega em Nampula, Nacala, Monapo, Angoche e Ilha de Moçambique. Pagamento por M-Pesa ou e-Mola.",
   openGraph: {
-    title: "BlokManager — Blocos de cimento em Nampula",
+    title: "SSP — Blocos de cimento em Nampula",
     description: "Blocos de cimento e pavê com entrega na província de Nampula. Pague por M-Pesa ou e-Mola.",
     locale: "pt_MZ",
     type: "website",
@@ -40,7 +39,7 @@ export default function RootLayout({
   return (
     <html
       lang="pt-MZ"
-      className={`${inter.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geist.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-on-surface">{children}</body>
     </html>

@@ -199,3 +199,67 @@
     @apply font-sans;
   }
 }
+/* ===== Loja: estilo neutro (preto/cinza) sobre os componentes partilhados ===== */
+.store {
+  --primary: #111111;
+  --primary-foreground: #ffffff;
+  --ring: rgb(0 0 0 / 0.15);
+  --border: rgb(0 0 0 / 0.08);
+  --input: rgb(0 0 0 / 0.08);
+  --background: #f9fafb;
+}
+.store input:not([type="checkbox"]):not([type="radio"]),
+.store select,
+.store textarea {
+  border-radius: 0.75rem;
+  border-color: rgb(0 0 0 / 0.08);
+  background-color: rgb(255 255 255 / 0.8);
+}
+.store input:not([type="checkbox"]):not([type="radio"]):focus,
+.store select:focus,
+.store textarea:focus {
+  border-color: rgb(0 0 0 / 0.2);
+  box-shadow: 0 0 0 3px rgb(0 0 0 / 0.05);
+}
+.store label {
+  color: rgb(0 0 0 / 0.7);
+}
+
+/* ===== Loja (estilo editorial escuro) ===== */
+.font-display { font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif; }
+.font-price { font-family: var(--font-price), Georgia, serif; font-style: italic; }
+
+/* Linhas verticais de fundo */
+.grid-lines {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: 80rem;
+  margin: 0 auto;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+@media (min-width: 768px) { .grid-lines { padding: 0 3rem; } }
+.grid-line { width: 1px; height: 100%; background-color: rgb(127 127 127 / 0.07); }
+
+@keyframes reveal-in {
+  0% { opacity: 0; transform: translateY(30px); filter: blur(8px); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float { animation: float-y 6s ease-in-out infinite; }
+.reveal { animation: reveal-in 0.8s ease-out both; animation-play-state: paused; }
+.reveal.is-visible { animation-play-state: running; }
+.reveal-d1 { animation-delay: 0.1s; }
+.reveal-d2 { animation-delay: 0.2s; }
+.reveal-d3 { animation-delay: 0.3s; }
+.reveal-d4 { animation-delay: 0.4s; }
+@media (prefers-reduced-motion: reduce) {
+  .reveal, .animate-float { animation: none !important; }
+}
