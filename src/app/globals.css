@@ -256,10 +256,13 @@
 .animate-float { animation: float-y 6s ease-in-out infinite; }
 .reveal { animation: reveal-in 0.8s ease-out both; animation-play-state: paused; }
 .reveal.is-visible { animation-play-state: running; }
+/* Acima da dobra: anima logo, sem depender de JavaScript */
+.reveal-now { animation: reveal-in 0.8s ease-out both; }
+@media (scripting: none) { .reveal { animation: none; } }
 .reveal-d1 { animation-delay: 0.1s; }
 .reveal-d2 { animation-delay: 0.2s; }
 .reveal-d3 { animation-delay: 0.3s; }
 .reveal-d4 { animation-delay: 0.4s; }
 @media (prefers-reduced-motion: reduce) {
-  .reveal, .animate-float { animation: none !important; }
+  .reveal, .reveal-now, .animate-float { animation: none !important; }
 }

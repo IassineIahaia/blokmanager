@@ -82,7 +82,7 @@ export default async function StorefrontPage() {
         </div>
 
         <div className="relative z-10 mx-auto grid w-full max-w-7xl grid-cols-1 items-center gap-12 px-6 pb-20 pt-40 md:grid-cols-2 md:px-12">
-          <div className="reveal">
+          <div className="reveal-now">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-sm">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
@@ -118,7 +118,7 @@ export default async function StorefrontPage() {
           </div>
 
           {featured && (
-            <div className="reveal reveal-d3 relative flex items-center justify-center md:justify-end">
+            <div className="reveal-now reveal-d3 relative flex items-center justify-center md:justify-end">
               <div className="relative aspect-[3/4] w-full max-w-sm">
                 <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-white/10 to-transparent opacity-30 blur-3xl" />
                 <div className="animate-float relative z-10 h-full w-full overflow-hidden rounded-[32px] border border-white/10 shadow-2xl">
