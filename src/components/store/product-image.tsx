@@ -17,7 +17,7 @@ function useImageFallback() {
 
 /**
  * Foto do produto. Usa o URL definido no admin; se não houver, tenta
- * `/produtos/<tipo>.jpg` em `public/`. Se a foto não carregar, mostra a ilustração.
+ * `/fotos/produtos/<tipo>.jpg` em `public/`. Se a foto não carregar, mostra a ilustração.
  */
 export function ProductImage({
   type,
@@ -31,7 +31,7 @@ export function ProductImage({
   className?: string;
 }) {
   const { failed, ref, onError } = useImageFallback();
-  const src = imageUrl || `/produtos/${type}.jpg`;
+  const src = imageUrl || `/fotos/produtos/${type}.jpg`;
 
   if (failed) {
     return (
